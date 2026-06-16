@@ -1,0 +1,98 @@
+{% extends 'layout.html' %}
+
+{% block title %}Meat Locker (Stat Totals){% endblock %}
+
+{% block content %}
+<div class="glass-panel">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h2 class="glass-panel-title" style="margin-bottom: 0.3rem;">🥩 The Meat Locker</h2>
+            <p style="color: var(--text-secondary); font-size: 0.95rem;">Accumulated career stat totals across all recorded games. Click headers to sort.</p>
+        </div>
+    </div>
+
+    {% if totals %}
+        <div class="table-wrapper">
+            <table class="stats-table">
+                <thead>
+                    <tr>
+                        <th class="sortable">Player</th>
+                        <th class="sortable" style="text-align: center;">GP</th>
+                        <th class="sortable" style="text-align: center;">MIN</th>
+                        <th class="sortable" style="text-align: center; color: var(--neon-green);">PTS</th>
+                        <th class="sortable" style="text-align: center;">REB</th>
+                        <th class="sortable" style="text-align: center;">AST</th>
+                        <th class="sortable" style="text-align: center;">STL</th>
+                        <th class="sortable" style="text-align: center;">BLK</th>
+                        <th class="sortable" style="text-align: center;">TO</th>
+                        <th class="sortable" style="text-align: center;">PF</th>
+                        <th class="sortable text-bad" style="text-align: center; color: #ff5555;">AIR</th>
+                        <th class="sortable text-bad" style="text-align: center; color: #ff5555;">BOZO</th>
+                        <th class="sortable" style="text-align: center; color: var(--neon-gold);">MVI (Total)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in totals %}
+                        <tr>
+                            <td>
+                                <span class="jersey-badge">#{{ p.jersey_number }}</span>
+                                <strong>{{ p.name }}</strong>
+                                <span style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-left: 3rem;">
+                                    "{{ p.nickname }}"
+                                </span>
+                            </td>
+                            <td style="text-align: center; font-family: var(--font-mono); font-weight: 600;">{{ p.games_played }}</td>
+                            <td style="text-align: center; font-family: var(--font-mono);">{{ p.total_minutes }}</td>
+                            <td style="text-align: center; font-family: var(--font-mono); font-weight: 700; color: var(--neon-green);">{{ p.total_points }}</td>
+                            <td style="text-align: center; font-family: var(--font-mono);">{{ p.total_rebounds }}</td>
+                            <td style="text-align: center; font-family: var(--font-mono);">{{ p.total_assists }}</td>
+                            <td style="text-align: center; font-family: var(--font-mono);">{{ p.total_steals }}</td>
+                            <td style="text-align: center; font-family: var(--font-mono);">{{ p.total_blocks }}</td>
+                            <td style="text-align: center; font-family: var(--font-mono);">{{ p.total_turnovers }}</td>
+                            <td style="text-align: center; font-family: var(--font-mono);">{{ p.total_fouls }}</td>
+                            <td style="text-align: center; font-family: var(--font-mono); color: var(--neon-red); font-weight: 600;">{{ p.total_airballs }}</td>
+                            <td style="text-align: center; font-family: var(--font-mono); color: var(--neon-red); font-weight: 600;">{{ p.total_bozo_moments }}</td>
+                            <td style="text-align: center; font-family: var(--font-mono); font-weight: 700; color: var(--neon-gold);">{{ p.total_mvi }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div style="text-align: center; padding: 3rem; color: var(--text-secondary);">
+            <p>No player totals data available. Populate players and games first.</p>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Single-Game Records Section -->
+{% if records %}
+<div class="glass-panel" style="margin-top: 3rem;">
+    <h2 class="glass-panel-title" style="margin-bottom: 0.5rem;">🔥 Single-Game Records</h2>
+    <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 2rem;">
+        The peak individual performances in a single match in Deadly Cows history.
+    </p>
+
+    <div class="record-grid">
+        {% for r in records %}
+            <a href="{{ url_for('game_detail', game_id=r.game_id) }}" class="stat-widget" style="text-align: left; border-color: rgba(57, 255, 20, 0.25); background: rgba(0, 0, 0, 0.35); padding: 1.8rem 1.5rem; text-decoration: none; display: block; color: inherit;">
+                <div class="stat-widget-label" style="color: var(--neon-green); font-weight: 700; font-size: 0.85rem; letter-spacing: 0.5px;">
+                    {{ r.label }}
+                </div>
+                <div class="stat-widget-value wins" style="font-size: 2.4rem; margin: 0.6rem 0; font-family: var(--font-mono);">
+                    {{ r.value }}
+                </div>
+                <div class="stat-widget-sub" style="font-size: 0.95rem; display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.4rem;">
+                    <span class="jersey-badge" style="margin-right: 0;">#{{ r.jersey_number }}</span>
+                    <strong>{{ r.player_name }}</strong>
+                </div>
+                <div style="font-size: 0.8rem; color: var(--text-secondary); font-family: var(--font-mono); line-height: 1.3;">
+                    vs {{ r.opponent }} <br>
+                    on {{ r.date }}
+                </div>
+            </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

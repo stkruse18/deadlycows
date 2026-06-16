@@ -1,0 +1,133 @@
+{% extends 'layout.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="glass-panel">
+    <h1 style="font-family: var(--font-header); text-transform: uppercase; margin-bottom: 0.5rem;">{{ title }}</h1>
+    <p style="color: var(--text-secondary); margin-bottom: 2rem;">Fill out the match details and each player's individual performance stats below.</p>
+
+    <form method="POST">
+        <!-- Game Meta Information -->
+        <h3 style="font-family: var(--font-mono); font-size: 0.95rem; text-transform: uppercase; color: var(--neon-green); margin-bottom: 1rem; border-bottom: 1px solid rgba(57, 255, 20, 0.2); padding-bottom: 0.5rem;">
+            📍 Match Details
+        </h3>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="opponent">Opponent Name</label>
+                <input type="text" id="opponent" name="opponent" class="form-control" placeholder="e.g. Porkers Spurs" value="{{ game.opponent if game else '' }}" required>
+            </div>
+            <div class="form-group">
+                <label for="date">Game Date</label>
+                <input type="date" id="date" name="date" class="form-control" value="{{ game.date if game else '' }}" required>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="cows_score">Deadly Cows Score (Auto-Sums from points below)</label>
+                <input type="number" id="cows_score" name="cows_score" class="form-control" value="{{ game.cows_score if game else 0 }}" readonly style="background: rgba(57, 255, 20, 0.05); border-color: var(--border-color); color: var(--neon-green); font-weight: 700;">
+            </div>
+            <div class="form-group">
+                <label for="opponent_score">Opponent Score</label>
+                <input type="number" id="opponent_score" name="opponent_score" class="form-control" placeholder="e.g. 88" value="{{ game.opponent_score if game else 0 }}" required min="0">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="outcome">Outcome</label>
+                <select id="outcome" name="outcome" class="form-control" required>
+                    <option value="W" {% if game and game.outcome.upper() == 'W' %}selected{% endif %}>UDDER VICTORY (W)</option>
+                    <option value="L" {% if game and game.outcome.upper() == 'L' %}selected{% endif %}>UDDER FAILURE (L)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="location">Location</label>
+                <input type="text" id="location" name="location" class="form-control" placeholder="e.g. The Pasture (Home)" value="{{ game.location if game else 'The Pasture (Home)' }}">
+            </div>
+        </div>
+
+        <!-- Box Score Spreadsheet Entry -->
+        <h3 style="font-family: var(--font-mono); font-size: 0.95rem; text-transform: uppercase; color: var(--neon-green); margin-top: 2.5rem; margin-bottom: 1rem; border-bottom: 1px solid rgba(57, 255, 20, 0.2); padding-bottom: 0.5rem;">
+            📊 Player Box Score (Set Minutes > 0 to include player in game)
+        </h3>
+
+        {% if players %}
+            <div class="table-wrapper">
+                <table class="stats-entry-table">
+                    <thead>
+                        <tr>
+                            <th style="text-align: left; width: 22%;">Player</th>
+                            <th style="width: 8%;">MIN</th>
+                            <th style="width: 8%; color: var(--neon-green);">PTS</th>
+                            <th style="width: 8%;">REB</th>
+                            <th style="width: 8%;">AST</th>
+                            <th style="width: 8%;">STL</th>
+                            <th style="width: 8%;">BLK</th>
+                            <th style="width: 8%;">TO</th>
+                            <th style="width: 8%;">PF</th>
+                            <th style="width: 8%; color: var(--neon-red);">AIR</th>
+                            <th style="width: 8%; color: var(--neon-red);">BOZO</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in players %}
+                            {% set has_stats = stats_map and p.id in stats_map %}
+                            {% set p_stats = stats_map[p.id] if has_stats else none %}
+                            <tr class="{% if not has_stats or p_stats.minutes == 0 %}player-inactive{% endif %}">
+                                <td style="text-align: left;">
+                                    <span class="jersey-badge">#{{ p.jersey_number }}</span>
+                                    <strong>{{ p.name }}</strong>
+                                    <div style="font-size: 0.75rem; color: var(--text-secondary);">"{{ p.nickname }}"</div>
+                                </td>
+                                <td>
+                                    <input type="number" name="minutes_{{ p.id }}" class="input-mini player-minutes-input" min="0" max="60" value="{{ p_stats.minutes if has_stats else 0 }}">
+                                </td>
+                                <td>
+                                    <input type="number" name="points_{{ p.id }}" class="input-mini player-points-input" min="0" value="{{ p_stats.points if has_stats else 0 }}">
+                                </td>
+                                <td>
+                                    <input type="number" name="rebounds_{{ p.id }}" class="input-mini" min="0" value="{{ p_stats.rebounds if has_stats else 0 }}">
+                                </td>
+                                <td>
+                                    <input type="number" name="assists_{{ p.id }}" class="input-mini" min="0" value="{{ p_stats.assists if has_stats else 0 }}">
+                                </td>
+                                <td>
+                                    <input type="number" name="steals_{{ p.id }}" class="input-mini" min="0" value="{{ p_stats.steals if has_stats else 0 }}">
+                                </td>
+                                <td>
+                                    <input type="number" name="blocks_{{ p.id }}" class="input-mini" min="0" value="{{ p_stats.blocks if has_stats else 0 }}">
+                                </td>
+                                <td>
+                                    <input type="number" name="turnovers_{{ p.id }}" class="input-mini" min="0" value="{{ p_stats.turnovers if has_stats else 0 }}">
+                                </td>
+                                <td>
+                                    <input type="number" name="fouls_{{ p.id }}" class="input-mini" min="0" max="6" value="{{ p_stats.fouls if has_stats else 0 }}">
+                                </td>
+                                <td>
+                                    <input type="number" name="airballs_{{ p.id }}" class="input-mini" min="0" value="{{ p_stats.airballs if has_stats else 0 }}" style="border-color: rgba(255,51,51,0.2); color: var(--neon-red);">
+                                </td>
+                                <td>
+                                    <input type="number" name="bozo_moments_{{ p.id }}" class="input-mini" min="0" value="{{ p_stats.bozo_moments if has_stats else 0 }}" style="border-color: rgba(255,51,51,0.2); color: var(--neon-red);">
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p style="color: var(--text-secondary); text-align: center; padding: 2rem;">
+                There are no players in the herd to assign stats to. <a href="{{ url_for('manage') }}" style="color: var(--neon-green);">Draft players first</a>.
+            </p>
+        {% endif %}
+
+        <!-- Form Actions -->
+        <div style="margin-top: 3rem; display: flex; gap: 1.2rem;">
+            <button type="submit" class="btn btn-primary">Save Game & Box Score</button>
+            <a href="{{ url_for('manage') }}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,67 @@
+{% extends 'layout.html' %}
+
+{% block title %}Milk Carton (Player Averages){% endblock %}
+
+{% block content %}
+<div class="glass-panel">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h2 class="glass-panel-title" style="margin-bottom: 0.3rem;">🥛 The Milk Carton</h2>
+            <p style="color: var(--text-secondary); font-size: 0.95rem;">Average statistics per game of all players. Click headers to sort by column.</p>
+        </div>
+    </div>
+
+    {% if averages %}
+        <div class="table-wrapper">
+            <table class="stats-table">
+                <thead>
+                    <tr>
+                        <th class="sortable">Player</th>
+                        <th class="sortable" style="text-align: center;">GP</th>
+                        <th class="sortable" style="text-align: center;">MIN</th>
+                        <th class="sortable" style="text-align: center; color: var(--neon-green);">PTS</th>
+                        <th class="sortable" style="text-align: center;">REB</th>
+                        <th class="sortable" style="text-align: center;">AST</th>
+                        <th class="sortable" style="text-align: center;">STL</th>
+                        <th class="sortable" style="text-align: center;">BLK</th>
+                        <th class="sortable" style="text-align: center;">TO</th>
+                        <th class="sortable" style="text-align: center;">PF</th>
+                        <th class="sortable text-bad" style="text-align: center; color: #ff5555;">AIR</th>
+                        <th class="sortable text-bad" style="text-align: center; color: #ff5555;">BOZO</th>
+                        <th class="sortable" style="text-align: center; color: var(--neon-gold);">MVI (Avg)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in averages %}
+                        <tr>
+                            <td>
+                                <span class="jersey-badge">#{{ p.jersey_number }}</span>
+                                <strong>{{ p.name }}</strong>
+                                <span style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-left: 3rem;">
+                                    "{{ p.nickname }}"
+                                </span>
+                            </td>
+                            <td style="text-align: center; font-family: var(--font-mono);">{{ p.games_played }}</td>
+                            <td style="text-align: center; font-family: var(--font-mono);">{{ p.avg_minutes }}</td>
+                            <td style="text-align: center; font-family: var(--font-mono); font-weight: 700; color: var(--neon-green);">{{ p.avg_points }}</td>
+                            <td style="text-align: center; font-family: var(--font-mono);">{{ p.avg_rebounds }}</td>
+                            <td style="text-align: center; font-family: var(--font-mono);">{{ p.avg_assists }}</td>
+                            <td style="text-align: center; font-family: var(--font-mono);">{{ p.avg_steals }}</td>
+                            <td style="text-align: center; font-family: var(--font-mono);">{{ p.avg_blocks }}</td>
+                            <td style="text-align: center; font-family: var(--font-mono);">{{ p.avg_turnovers }}</td>
+                            <td style="text-align: center; font-family: var(--font-mono);">{{ p.avg_fouls }}</td>
+                            <td style="text-align: center; font-family: var(--font-mono); color: var(--neon-red); font-weight: 600;">{{ p.avg_airballs }}</td>
+                            <td style="text-align: center; font-family: var(--font-mono); color: var(--neon-red); font-weight: 600;">{{ p.avg_bozo_moments }}</td>
+                            <td style="text-align: center; font-family: var(--font-mono); font-weight: 700; color: var(--neon-gold);">{{ p.avg_mvi }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div style="text-align: center; padding: 3rem; color: var(--text-secondary);">
+            <p>No player average stats available. First add some players and record matches in the admin section.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

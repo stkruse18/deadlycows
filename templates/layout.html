@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{% endblock %} | Deadly Cows Basketball</title>
+    
+    <!-- SEO and Meta Tags -->
+    <meta name="description" content="Official stats tracker and pasture of the Deadly Cows, the most feared, milk-spilling, backboard-shattering basketball squad in the land.">
+    <meta name="author" content="Deadly Cows Team">
+    
+    <!-- Stylesheets and Fonts -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='images/logo.png') }}" type="image/png">
+</head>
+<body>
+    <!-- Container for dynamic floating cows & farm emoji animations -->
+    <div id="animation-container"></div>
+
+    <!-- Header & Navigation Bar -->
+    <header>
+        <div class="nav-container">
+            <a href="{{ url_for('index') }}" class="logo-link">
+                <img class="logo-img" src="{{ url_for('static', filename='images/logo.png') }}" alt="Deadly Cows Logo">
+                <span class="logo-text">Deadly Cows</span>
+            </a>
+            
+            <ul class="nav-menu">
+                <li class="nav-item {% if request.path == '/' %}active{% endif %}">
+                    <a href="{{ url_for('index') }}">The Barn</a>
+                </li>
+                <li class="nav-item {% if request.path == '/averages' %}active{% endif %}">
+                    <a href="{{ url_for('averages') }}">Milk Carton (Averages)</a>
+                </li>
+                <li class="nav-item {% if request.path == '/totals' %}active{% endif %}">
+                    <a href="{{ url_for('totals') }}">Meat Locker (Totals)</a>
+                </li>
+                <li class="nav-item {% if request.path.startswith('/manage') %}active{% endif %}">
+                    {% if is_admin() %}
+                        <a href="{{ url_for('manage') }}">Cattle Control (Admin)</a>
+                    {% else %}
+                        <a href="{{ url_for('manage') }}">Gate Entrance</a>
+                    {% endif %}
+                </li>
+            </ul>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main>
+        <!-- Flash Messaging -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}" id="alert-{{ loop.index }}">
+                        <span>🐮 {{ message }}</span>
+                        <button class="alert-close" onclick="document.getElementById('alert-{{ loop.index }}').style.display='none';">&times;</button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-container">
+            <p>&copy; 2026 Deadly Cows Basketball Club. All rights reserved. Udder Destruction.</p>
+            <p>Moo-Value Index (MVI) powered by lactose calculations.</p>
+            {% if is_admin() %}
+                <p><span class="text-highlight">Coach logged in</span> | <a href="{{ url_for('logout') }}" style="color: var(--neon-red); text-decoration: underline;">Escape Barn (Logout)</a></p>
+            {% endif %}
+        </div>
+    </footer>
+
+    <!-- JavaScript Bundle -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

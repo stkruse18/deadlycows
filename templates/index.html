@@ -1,0 +1,118 @@
+{% extends 'layout.html' %}
+
+{% block title %}Barn Home{% endblock %}
+
+{% block content %}
+<!-- Hero Branding Section -->
+<section class="hero-section">
+    <div class="hero-content">
+        <h1>
+            <span class="neon-title">Deadly Cows</span>
+            <span class="neon-green-text">Udder Chaos</span>
+        </h1>
+        <p class="hero-subtitle">
+            Grazing the boards, churning the defense, and milking the opposition. Welcome to the official pasture of the most feared basketball team on the asphalt.
+        </p>
+        <div style="display: flex; gap: 1rem;">
+            <a href="{{ url_for('averages') }}" class="btn btn-primary">Check Roster Stats</a>
+            <a href="#recent-slaughters" class="btn btn-secondary">Recent Games</a>
+        </div>
+    </div>
+    <div class="hero-image-wrapper">
+        <img class="hero-img" src="{{ url_for('static', filename='images/hero.png') }}" alt="Intense Cow Slam Dunking">
+    </div>
+</section>
+
+<!-- Team Record Scoreboard Widget -->
+<section class="record-grid">
+    <div class="stat-widget">
+        <div class="stat-widget-label">Team Record</div>
+        <div class="stat-widget-value" style="display: flex; justify-content: center; gap: 0.5rem;">
+            <span class="wins">{{ wins }} W</span>
+            <span style="color: var(--text-secondary)">-</span>
+            <span class="udders">{{ udders }} U</span>
+        </div>
+        <div class="stat-widget-sub">Wins vs Udders (Losses)</div>
+    </div>
+
+    {% if ppg_leader %}
+    <div class="stat-widget">
+        <div class="stat-widget-label">Moo-Jordan PPG Leader</div>
+        <div class="stat-widget-value wins">{{ ppg_leader.avg_points }}</div>
+        <div class="stat-widget-sub">{{ ppg_leader.name }} ({{ ppg_leader.nickname }})</div>
+    </div>
+    {% endif %}
+
+    {% if rpg_leader %}
+    <div class="stat-widget">
+        <div class="stat-widget-label">Boards Grazed (RPG)</div>
+        <div class="stat-widget-value wins">{{ rpg_leader.avg_rebounds }}</div>
+        <div class="stat-widget-sub">{{ rpg_leader.name }}</div>
+    </div>
+    {% endif %}
+
+    {% if airball_leader %}
+    <div class="stat-widget">
+        <div class="stat-widget-label">Brick-Layer (Airballs)</div>
+        <div class="stat-widget-value udders" style="color: var(--neon-red); text-shadow: 0 0 10px var(--neon-red-glow);">{{ airball_leader.avg_airballs }}</div>
+        <div class="stat-widget-sub">{{ airball_leader.name }} (PPG: {{ airball_leader.avg_points }})</div>
+    </div>
+    {% endif %}
+</section>
+
+<!-- Funny Leaders Carousel/Grid -->
+<div class="glass-panel" style="margin-bottom: 4rem;">
+    <h2 class="glass-panel-title">🏆 Barn Standouts</h2>
+    <div class="record-grid" style="margin-top: 1.5rem;">
+        {% if apg_leader %}
+        <div class="stat-widget" style="background: rgba(0,0,0,0.2);">
+            <div class="stat-widget-label">Cud-Chef (APG)</div>
+            <div class="stat-widget-value text-highlight" style="color: var(--neon-green);">{{ apg_leader.avg_assists }}</div>
+            <div class="stat-widget-sub">{{ apg_leader.name }}</div>
+        </div>
+        {% endif %}
+        
+        {% if bozo_leader %}
+        <div class="stat-widget" style="background: rgba(0,0,0,0.2); border-color: rgba(255, 51, 51, 0.2);">
+            <div class="stat-widget-label">Clown Cow (Avg Bozo Moments)</div>
+            <div class="stat-widget-value text-bad">{{ bozo_leader.avg_bozo_moments }}</div>
+            <div class="stat-widget-sub">{{ bozo_leader.name }} (LIP Hazard)</div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Recent Games List -->
+<section class="glass-panel" id="recent-slaughters">
+    <div class="game-list-header">
+        <h2 class="glass-panel-title">⚔️ All Slaughters (Games)</h2>
+        {% if is_admin() %}
+            <a href="{{ url_for('new_game') }}" class="btn btn-primary" style="font-size: 0.85rem; padding: 0.5rem 1rem;">+ Add Game</a>
+        {% endif %}
+    </div>
+
+    {% if games %}
+        <div class="game-cards">
+            {% for game in games %}
+                <a href="{{ url_for('game_detail', game_id=game.id) }}" class="game-card-row">
+                    <span class="game-card-date">{{ game.date }}</span>
+                    <span class="game-card-matchup">vs {{ game.opponent }}</span>
+                    <span class="game-card-outcome outcome-{{ game.outcome | lower }}">
+                        {{ 'WIN' if game.outcome.upper() == 'W' else 'UDDER LOSS' }}
+                    </span>
+                    <span class="game-card-score {{ 'score-win' if game.outcome.upper() == 'W' else 'score-loss' }}">
+                        {{ game.cows_score }} - {{ game.opponent_score }}
+                    </span>
+                </a>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+            <p>The pasture is empty! No games have been recorded yet. Set up players and log games in the admin panel.</p>
+            {% if is_admin() %}
+                <a href="{{ url_for('new_game') }}" class="btn btn-primary" style="margin-top: 1rem;">Log First Game</a>
+            {% endif %}
+        </div>
+    {% endif %}
+</section>
+{% endblock %}

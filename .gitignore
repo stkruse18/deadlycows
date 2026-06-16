@@ -1,0 +1,15 @@
+# Ignore Python virtual environment
+.venv/
+venv/
+ENV/
+
+# Ignore Python caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Ignore macOS system files
+.DS_Store
+
+# Do NOT ignore deadlycows.db (we want this database tracked in Git)
+!deadlycows.db

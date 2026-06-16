@@ -1,0 +1,25 @@
+{% extends 'layout.html' %}
+
+{% block title %}Pasture Entrance{% endblock %}
+
+{% block content %}
+<div class="glass-panel" style="max-width: 500px; margin: 4rem auto; padding: 3rem 2.5rem;">
+    <h2 class="glass-panel-title" style="justify-content: center;">🔒 Pasture Gate</h2>
+    <p style="color: var(--text-secondary); text-align: center; margin-bottom: 2rem; font-size: 0.95rem;">
+        Enter the secret coach passphrase to manage the team roster, log box scores, and delete matches.
+    </p>
+
+    <form action="{{ url_for('manage') }}" method="POST">
+        <div class="form-group">
+            <label for="password">Coach Passphrase</label>
+            <input type="password" id="password" name="password" class="form-control" required autofocus>
+        </div>
+        
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Unlock Cattle Gate</button>
+    </form>
+    
+    <div style="margin-top: 2rem; text-align: center;">
+        <a href="{{ url_for('index') }}" style="color: var(--text-secondary); font-size: 0.9rem; text-decoration: none;">&larr; Return to Barn</a>
+    </div>
+</div>
+{% endblock %}
