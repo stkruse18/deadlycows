@@ -861,3 +861,79 @@ footer p {
         background: #181822; /* Slightly darker header column */
     }
 }
+
+/* Stacking card grid layout for vertical phone screens */
+@media (max-width: 650px) {
+    /* Disable sticky first column styling on small screens */
+    table.stats-table th:first-child,
+    table.stats-table td:first-child {
+        position: static !important;
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+    
+    table.stats-table thead {
+        display: none !important;
+    }
+    
+    table.stats-table, 
+    table.stats-table tbody, 
+    table.stats-table tr {
+        display: block !important;
+        width: 100% !important;
+    }
+    
+    table.stats-table tr {
+        background: rgba(255, 255, 255, 0.02) !important;
+        border: 1px solid var(--border-color) !important;
+        border-radius: 12px !important;
+        margin-bottom: 1.2rem !important;
+        padding: 1.2rem !important;
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 0.8rem !important;
+    }
+    
+    /* First cell spans full width and shows player name/awards */
+    table.stats-table tr td:first-child {
+        grid-column: span 3 !important;
+        border-bottom: 1px solid var(--border-color) !important;
+        padding-bottom: 0.6rem !important;
+        margin-bottom: 0.4rem !important;
+        display: block !important;
+        text-align: left !important;
+    }
+    
+    /* Notes cell spans full width at the bottom */
+    table.stats-table tr td.notes-cell {
+        grid-column: span 3 !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
+        padding-top: 0.6rem !important;
+        margin-top: 0.4rem !important;
+        display: block !important;
+        text-align: left !important;
+    }
+    
+    /* Style normal stats cells into blocks */
+    table.stats-table td:not(:first-child):not(.notes-cell) {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        background: rgba(255, 255, 255, 0.02) !important;
+        border: 1px solid rgba(255, 255, 255, 0.04) !important;
+        border-radius: 6px !important;
+        padding: 0.5rem !important;
+        text-align: center !important;
+    }
+    
+    /* Add labels above value */
+    table.stats-table td:not(:first-child):not(.notes-cell)::before {
+        content: attr(data-label) !important;
+        font-size: 0.7rem !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
+        color: var(--text-secondary) !important;
+        margin-bottom: 0.2rem !important;
+    }
+}
