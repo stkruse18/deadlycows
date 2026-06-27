@@ -29,10 +29,12 @@ CREATE TABLE stats (
     steals INTEGER NOT NULL DEFAULT 0,
     blocks INTEGER NOT NULL DEFAULT 0,
     turnovers INTEGER NOT NULL DEFAULT 0,
-    fouls INTEGER NOT NULL DEFAULT 0,
-    minutes INTEGER NOT NULL DEFAULT 0,
     airballs INTEGER NOT NULL DEFAULT 0,
     bozo_moments INTEGER NOT NULL DEFAULT 0,
+    fg INTEGER NOT NULL DEFAULT 0,
+    fga INTEGER NOT NULL DEFAULT 0,
+    rating INTEGER NOT NULL DEFAULT 60, -- Overall Performance Rating (60-99)
+    notes TEXT NOT NULL DEFAULT '', -- Game notes for the player
     FOREIGN KEY(player_id) REFERENCES players(id) ON DELETE CASCADE,
     FOREIGN KEY(game_id) REFERENCES games(id) ON DELETE CASCADE,
     UNIQUE(player_id, game_id)

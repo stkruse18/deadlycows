@@ -190,12 +190,12 @@ function initAdminAutoSum() {
     function sumPoints() {
         let total = 0;
         pointsInputs.forEach(input => {
-            // Find minutes input in the same row
+            // Find checkbox in the same row
             const tr = input.closest('tr');
-            const minutesInput = tr ? tr.querySelector('.player-minutes-input') : null;
+            const playedCheckbox = tr ? tr.querySelector('.player-played-checkbox') : null;
             
-            // Only count points if the player has > 0 minutes
-            const played = minutesInput ? parseInt(minutesInput.value || 0) > 0 : true;
+            // Only count points if the player has played
+            const played = playedCheckbox ? playedCheckbox.checked : true;
 
             if (played) {
                 total += parseInt(input.value || 0);
@@ -204,22 +204,32 @@ function initAdminAutoSum() {
         cowsScoreInput.value = total;
     }
 
-    // Attach listeners to points and minutes inputs
+    // Attach listeners to points inputs
     pointsInputs.forEach(input => {
         input.addEventListener('input', sumPoints);
     });
 
-    const minutesInputs = document.querySelectorAll('.player-minutes-input');
-    minutesInputs.forEach(input => {
-        input.addEventListener('input', (e) => {
-            const tr = input.closest('tr');
-            // Dim/disable inputs in the row if minutes is 0
+    const playedCheckboxes = document.querySelectorAll('.player-played-checkbox');
+    playedCheckboxes.forEach(checkbox => {
+        const updateRowState = () => {
+            const tr = checkbox.closest('tr');
             if (tr) {
-                const isInactive = parseInt(input.value || 0) === 0;
-                tr.classList.toggle('player-inactive', isInactive);
+                tr.classList.toggle('player-inactive', !checkbox.checked);
+                // Enable/disable all other inputs inside this row
+                const rowInputs = tr.querySelectorAll('input:not(.player-played-checkbox)');
+                rowInputs.forEach(inp => {
+                    inp.disabled = !checkbox.checked;
+                });
             }
+        };
+
+        checkbox.addEventListener('change', () => {
+            updateRowState();
             sumPoints();
         });
+
+        // Run initial setup for each row on page load
+        updateRowState();
     });
 
     // Trigger initial sum on load to align values if editing

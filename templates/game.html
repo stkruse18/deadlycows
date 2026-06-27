@@ -32,7 +32,7 @@
             <div class="spotlight-award-name">🏆 Moo-VP of the Game</div>
             <h3>{{ moo_vp.name }}</h3>
             <p style="font-family: var(--font-mono); font-size: 0.9rem; color: var(--neon-gold); font-weight: 700; margin-bottom: 0.5rem;">
-                Moo-Value Index: {{ moo_vp.mvi }} ({{ moo_vp.points }} PTS, {{ moo_vp.rebounds }} REB, {{ moo_vp.assists }} AST)
+                Overall Rating: {{ moo_vp.rating }} ({{ moo_vp.points }} PTS, {{ moo_vp.rebounds }} REB, {{ moo_vp.assists }} AST)
             </p>
             <p class="spotlight-quote">
                 {% if moo_vp.name == 'LeBeef James' %}
@@ -61,7 +61,7 @@
             <div class="spotlight-award-name">🥛 Lactose-Intolerant Player (LIP)</div>
             <h3>{{ lip.name }}</h3>
             <p style="font-family: var(--font-mono); font-size: 0.9rem; color: var(--neon-red); font-weight: 700; margin-bottom: 0.5rem;">
-                Moo-Value Index: {{ lip.mvi }} ({{ lip.airballs }} Airballs, {{ lip.bozo_moments }} Bozos)
+                Overall Rating: {{ lip.rating }} ({{ lip.airballs }} Airballs, {{ lip.bozo_moments }} Bozos)
             </p>
             <p class="spotlight-quote">
                 {% if lip.name == 'LeBeef James' %}
@@ -96,17 +96,17 @@
                 <thead>
                     <tr>
                         <th class="sortable">Player</th>
-                        <th class="sortable" style="text-align: center;">MIN</th>
                         <th class="sortable" style="text-align: center; color: var(--neon-green);">PTS</th>
+                        <th class="sortable" style="text-align: center;">FG-A</th>
                         <th class="sortable" style="text-align: center;">REB</th>
                         <th class="sortable" style="text-align: center;">AST</th>
                         <th class="sortable" style="text-align: center;">STL</th>
                         <th class="sortable" style="text-align: center;">BLK</th>
                         <th class="sortable" style="text-align: center;">TO</th>
-                        <th class="sortable" style="text-align: center;">PF</th>
                         <th class="sortable text-bad" style="text-align: center;">AIR</th>
                         <th class="sortable text-bad" style="text-align: center;">BOZO</th>
-                        <th class="sortable" style="text-align: center; color: var(--neon-gold);">MVI (Game)</th>
+                        <th class="sortable" style="text-align: center; color: var(--neon-gold);">Rating</th>
+                        <th style="text-align: left; width: 30%;">Notes</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -123,17 +123,17 @@
                                     <span style="color: var(--neon-red); font-size: 0.8rem; margin-left: 0.5rem;">[LIP 🥛]</span>
                                 {% endif %}
                             </td>
-                            <td style="text-align: center; font-family: var(--font-mono);">{{ p.minutes }}</td>
                             <td style="text-align: center; font-family: var(--font-mono); color: var(--neon-green); font-weight: 700;">{{ p.points }}</td>
+                            <td style="text-align: center; font-family: var(--font-mono);">{{ p.fg }}-{{ p.fga }}</td>
                             <td style="text-align: center; font-family: var(--font-mono);">{{ p.rebounds }}</td>
                             <td style="text-align: center; font-family: var(--font-mono);">{{ p.assists }}</td>
                             <td style="text-align: center; font-family: var(--font-mono);">{{ p.steals }}</td>
                             <td style="text-align: center; font-family: var(--font-mono);">{{ p.blocks }}</td>
                             <td style="text-align: center; font-family: var(--font-mono);">{{ p.turnovers }}</td>
-                            <td style="text-align: center; font-family: var(--font-mono);">{{ p.fouls }}</td>
                             <td style="text-align: center; font-family: var(--font-mono); color: var(--neon-red);">{{ p.airballs }}</td>
                             <td style="text-align: center; font-family: var(--font-mono); color: var(--neon-red);">{{ p.bozo_moments }}</td>
-                            <td style="text-align: center; font-family: var(--font-mono); font-weight: 700; color: var(--neon-gold);">{{ p.mvi }}</td>
+                            <td style="text-align: center; font-family: var(--font-mono); font-weight: 700; color: var(--neon-gold);">{{ p.rating }}</td>
+                            <td style="text-align: left; font-size: 0.9rem; color: var(--text-secondary); font-style: italic;">{{ p.notes }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>

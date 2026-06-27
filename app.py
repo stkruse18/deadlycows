@@ -157,21 +157,40 @@ def new_game():
         player_stats = []
         for p in players:
             p_id = p['id']
-            # Only add stats if minutes > 0
-            minutes = int(request.form.get(f'minutes_{p_id}', 0))
-            if minutes > 0:
+            # Only add stats if the player played (checkbox checked)
+            played = request.form.get(f'played_{p_id}') == 'on'
+            if played:
+                points = int(request.form.get(f'points_{p_id}', 0))
+                rebounds = int(request.form.get(f'rebounds_{p_id}', 0))
+                assists = int(request.form.get(f'assists_{p_id}', 0))
+                steals = int(request.form.get(f'steals_{p_id}', 0))
+                blocks = int(request.form.get(f'blocks_{p_id}', 0))
+                turnovers = int(request.form.get(f'turnovers_{p_id}', 0))
+                airballs = int(request.form.get(f'airballs_{p_id}', 0))
+                bozo_moments = int(request.form.get(f'bozo_moments_{p_id}', 0))
+                fg = int(request.form.get(f'fg_{p_id}', 0))
+                fga = int(request.form.get(f'fga_{p_id}', 0))
+                
+                # Dynamic rating calculation
+                rating = database.calculate_rating(
+                    points, rebounds, assists, steals, blocks, 
+                    turnovers, airballs, bozo_moments, fg, fga
+                )
+                
                 stat_row = {
                     'player_id': p_id,
-                    'minutes': minutes,
-                    'points': int(request.form.get(f'points_{p_id}', 0)),
-                    'rebounds': int(request.form.get(f'rebounds_{p_id}', 0)),
-                    'assists': int(request.form.get(f'assists_{p_id}', 0)),
-                    'steals': int(request.form.get(f'steals_{p_id}', 0)),
-                    'blocks': int(request.form.get(f'blocks_{p_id}', 0)),
-                    'turnovers': int(request.form.get(f'turnovers_{p_id}', 0)),
-                    'fouls': int(request.form.get(f'fouls_{p_id}', 0)),
-                    'airballs': int(request.form.get(f'airballs_{p_id}', 0)),
-                    'bozo_moments': int(request.form.get(f'bozo_moments_{p_id}', 0))
+                    'points': points,
+                    'rebounds': rebounds,
+                    'assists': assists,
+                    'steals': steals,
+                    'blocks': blocks,
+                    'turnovers': turnovers,
+                    'airballs': airballs,
+                    'bozo_moments': bozo_moments,
+                    'fg': fg,
+                    'fga': fga,
+                    'rating': rating,
+                    'notes': request.form.get(f'notes_{p_id}', '').strip()
                 }
                 player_stats.append(stat_row)
 
@@ -213,20 +232,39 @@ def edit_game(game_id):
         player_stats = []
         for p in players:
             p_id = p['id']
-            minutes = int(request.form.get(f'minutes_{p_id}', 0))
-            if minutes > 0:
+            played = request.form.get(f'played_{p_id}') == 'on'
+            if played:
+                points = int(request.form.get(f'points_{p_id}', 0))
+                rebounds = int(request.form.get(f'rebounds_{p_id}', 0))
+                assists = int(request.form.get(f'assists_{p_id}', 0))
+                steals = int(request.form.get(f'steals_{p_id}', 0))
+                blocks = int(request.form.get(f'blocks_{p_id}', 0))
+                turnovers = int(request.form.get(f'turnovers_{p_id}', 0))
+                airballs = int(request.form.get(f'airballs_{p_id}', 0))
+                bozo_moments = int(request.form.get(f'bozo_moments_{p_id}', 0))
+                fg = int(request.form.get(f'fg_{p_id}', 0))
+                fga = int(request.form.get(f'fga_{p_id}', 0))
+                
+                # Dynamic rating calculation
+                rating = database.calculate_rating(
+                    points, rebounds, assists, steals, blocks, 
+                    turnovers, airballs, bozo_moments, fg, fga
+                )
+                
                 stat_row = {
                     'player_id': p_id,
-                    'minutes': minutes,
-                    'points': int(request.form.get(f'points_{p_id}', 0)),
-                    'rebounds': int(request.form.get(f'rebounds_{p_id}', 0)),
-                    'assists': int(request.form.get(f'assists_{p_id}', 0)),
-                    'steals': int(request.form.get(f'steals_{p_id}', 0)),
-                    'blocks': int(request.form.get(f'blocks_{p_id}', 0)),
-                    'turnovers': int(request.form.get(f'turnovers_{p_id}', 0)),
-                    'fouls': int(request.form.get(f'fouls_{p_id}', 0)),
-                    'airballs': int(request.form.get(f'airballs_{p_id}', 0)),
-                    'bozo_moments': int(request.form.get(f'bozo_moments_{p_id}', 0))
+                    'points': points,
+                    'rebounds': rebounds,
+                    'assists': assists,
+                    'steals': steals,
+                    'blocks': blocks,
+                    'turnovers': turnovers,
+                    'airballs': airballs,
+                    'bozo_moments': bozo_moments,
+                    'fg': fg,
+                    'fga': fga,
+                    'rating': rating,
+                    'notes': request.form.get(f'notes_{p_id}', '').strip()
                 }
                 player_stats.append(stat_row)
 

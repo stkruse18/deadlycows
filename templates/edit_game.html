@@ -51,7 +51,7 @@
 
         <!-- Box Score Spreadsheet Entry -->
         <h3 style="font-family: var(--font-mono); font-size: 0.95rem; text-transform: uppercase; color: var(--neon-green); margin-top: 2.5rem; margin-bottom: 1rem; border-bottom: 1px solid rgba(57, 255, 20, 0.2); padding-bottom: 0.5rem;">
-            📊 Player Box Score (Set Minutes > 0 to include player in game)
+            📊 Player Box Score (Check "Played?" to include player in game)
         </h3>
 
         {% if players %}
@@ -59,34 +59,42 @@
                 <table class="stats-entry-table">
                     <thead>
                         <tr>
-                            <th style="text-align: left; width: 22%;">Player</th>
-                            <th style="width: 8%;">MIN</th>
-                            <th style="width: 8%; color: var(--neon-green);">PTS</th>
-                            <th style="width: 8%;">REB</th>
-                            <th style="width: 8%;">AST</th>
-                            <th style="width: 8%;">STL</th>
-                            <th style="width: 8%;">BLK</th>
-                            <th style="width: 8%;">TO</th>
-                            <th style="width: 8%;">PF</th>
-                            <th style="width: 8%; color: var(--neon-red);">AIR</th>
-                            <th style="width: 8%; color: var(--neon-red);">BOZO</th>
+                            <th style="text-align: left; width: 18%;">Player</th>
+                            <th style="text-align: center; width: 8%;">Played?</th>
+                            <th style="text-align: center; width: 6%; color: var(--neon-green);">PTS</th>
+                            <th style="text-align: center; width: 6%;">FG</th>
+                            <th style="text-align: center; width: 6%;">FGA</th>
+                            <th style="text-align: center; width: 6%;">REB</th>
+                            <th style="text-align: center; width: 6%;">AST</th>
+                            <th style="text-align: center; width: 6%;">STL</th>
+                            <th style="text-align: center; width: 6%;">BLK</th>
+                            <th style="text-align: center; width: 6%;">TO</th>
+                            <th style="text-align: center; width: 6%; color: var(--neon-red);">AIR</th>
+                            <th style="text-align: center; width: 6%; color: var(--neon-red);">BOZO</th>
+                            <th style="text-align: left; width: 20%;">Notes</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for p in players %}
                             {% set has_stats = stats_map and p.id in stats_map %}
                             {% set p_stats = stats_map[p.id] if has_stats else none %}
-                            <tr class="{% if not has_stats or p_stats.minutes == 0 %}player-inactive{% endif %}">
+                            <tr class="{% if not has_stats %}player-inactive{% endif %}">
                                 <td style="text-align: left;">
                                     <span class="jersey-badge">#{{ p.jersey_number }}</span>
                                     <strong>{{ p.name }}</strong>
                                     <div style="font-size: 0.75rem; color: var(--text-secondary);">"{{ p.nickname }}"</div>
                                 </td>
-                                <td>
-                                    <input type="number" name="minutes_{{ p.id }}" class="input-mini player-minutes-input" min="0" max="60" value="{{ p_stats.minutes if has_stats else 0 }}">
+                                <td style="text-align: center;">
+                                    <input type="checkbox" name="played_{{ p.id }}" class="player-played-checkbox" {% if has_stats %}checked{% endif %} style="transform: scale(1.3); cursor: pointer;">
                                 </td>
                                 <td>
                                     <input type="number" name="points_{{ p.id }}" class="input-mini player-points-input" min="0" value="{{ p_stats.points if has_stats else 0 }}">
+                                </td>
+                                <td>
+                                    <input type="number" name="fg_{{ p.id }}" class="input-mini" min="0" value="{{ p_stats.fg if has_stats else 0 }}">
+                                </td>
+                                <td>
+                                    <input type="number" name="fga_{{ p.id }}" class="input-mini" min="0" value="{{ p_stats.fga if has_stats else 0 }}">
                                 </td>
                                 <td>
                                     <input type="number" name="rebounds_{{ p.id }}" class="input-mini" min="0" value="{{ p_stats.rebounds if has_stats else 0 }}">
@@ -104,13 +112,13 @@
                                     <input type="number" name="turnovers_{{ p.id }}" class="input-mini" min="0" value="{{ p_stats.turnovers if has_stats else 0 }}">
                                 </td>
                                 <td>
-                                    <input type="number" name="fouls_{{ p.id }}" class="input-mini" min="0" max="6" value="{{ p_stats.fouls if has_stats else 0 }}">
-                                </td>
-                                <td>
                                     <input type="number" name="airballs_{{ p.id }}" class="input-mini" min="0" value="{{ p_stats.airballs if has_stats else 0 }}" style="border-color: rgba(255,51,51,0.2); color: var(--neon-red);">
                                 </td>
                                 <td>
                                     <input type="number" name="bozo_moments_{{ p.id }}" class="input-mini" min="0" value="{{ p_stats.bozo_moments if has_stats else 0 }}" style="border-color: rgba(255,51,51,0.2); color: var(--neon-red);">
+                                </td>
+                                <td style="text-align: left;">
+                                    <input type="text" name="notes_{{ p.id }}" class="form-control" placeholder="Optional notes..." value="{{ p_stats.notes if has_stats else '' }}" style="font-size: 0.85rem; padding: 0.3rem 0.5rem; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px; width: 100%;">
                                 </td>
                             </tr>
                         {% endfor %}

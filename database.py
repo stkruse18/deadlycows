@@ -17,22 +17,21 @@ def init_db():
     conn.commit()
     conn.close()
 
-def calculate_mvi(points, rebounds, assists, steals, blocks, turnovers, fouls, airballs, bozo_moments):
-    """
-    Moo-Value Index (MVI):
-    MVI = Points + 1.2*Rebounds + 1.5*Assists + 2.0*Steals + 2.0*Blocks - 1.5*Turnovers - 1.0*Fouls - 3.0*Airballs - 5.0*Bozo_Moments
-    """
-    return (
-        points 
-        + 1.2 * rebounds 
-        + 1.5 * assists 
-        + 2.0 * steals 
-        + 2.0 * blocks 
-        - 1.5 * turnovers 
-        - 1.0 * fouls 
-        - 3.0 * airballs 
-        - 5.0 * bozo_moments
+def calculate_rating(points, rebounds, assists, steals, blocks, turnovers, airballs, bozo_moments, fg, fga):
+    misses = max(0, fga - fg)
+    rating = (
+        67.0
+        + (points * 1.0)
+        + (rebounds * 0.8)
+        + (assists * 1.0)
+        + (steals * 1.5)
+        + (blocks * 1.5)
+        - (turnovers * 1.0)
+        - (airballs * 1.0)
+        - (bozo_moments * 2.0)
+        - (misses * 0.4)
     )
+    return int(round(max(60.0, min(99.0, rating))))
 
 def get_all_players():
     conn = get_db_connection()
@@ -78,26 +77,23 @@ def get_game_stats(game_id):
     ''', (game_id,)).fetchall()
     conn.close()
 
-    # Convert to list of dicts and calculate MVI
+    # Convert to list of dicts
     stats_list = []
     for s in stats:
-        row = dict(s)
-        row['mvi'] = round(calculate_mvi(
-            row['points'], row['rebounds'], row['assists'], row['steals'], row['blocks'],
-            row['turnovers'], row['fouls'], row['airballs'], row['bozo_moments']
-        ), 1)
-        stats_list.append(row)
+        stats_list.append(dict(s))
 
     if not stats_list:
         return [], None, None
 
-    # Determine Moo-VP (highest MVI) and LIP (lowest MVI)
-    # Sort stats by MVI descending
-    sorted_stats = sorted(stats_list, key=lambda x: x['mvi'], reverse=True)
-    moo_vp = sorted_stats[0]
-    lip = sorted_stats[-1]
+    # Determine Moo-VP (highest rating) and LIP (lowest rating)
+    # Sort stats by rating descending
+    stats_list = sorted(stats_list, key=lambda x: (x['rating'], -x['turnovers'] - x['airballs'] - x['bozo_moments']), reverse=True)
+    moo_vp = stats_list[0]
+    
+    # Sort for LIP (lowest rating)
+    sorted_lip = sorted(stats_list, key=lambda x: (x['rating'], -x['turnovers'] - x['airballs'] - x['bozo_moments']))
+    lip = sorted_lip[0]
 
-    # Handle single player edge case (could be both, but we show them accordingly)
     return stats_list, moo_vp, lip
 
 def add_game(opponent, date, cows_score, opponent_score, outcome, location, player_stats):
@@ -113,12 +109,12 @@ def add_game(opponent, date, cows_score, opponent_score, outcome, location, play
         cursor.execute('''
             INSERT INTO stats (
                 player_id, game_id, points, rebounds, assists, steals, blocks,
-                turnovers, fouls, minutes, airballs, bozo_moments
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                turnovers, airballs, bozo_moments, fg, fga, rating, notes
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             stat['player_id'], game_id, stat['points'], stat['rebounds'], stat['assists'],
-            stat['steals'], stat['blocks'], stat['turnovers'], stat['fouls'], stat['minutes'],
-            stat['airballs'], stat['bozo_moments']
+            stat['steals'], stat['blocks'], stat['turnovers'],
+            stat['airballs'], stat['bozo_moments'], stat['fg'], stat['fga'], stat['rating'], stat['notes']
         ))
     conn.commit()
     conn.close()
@@ -140,12 +136,12 @@ def update_game(game_id, opponent, date, cows_score, opponent_score, outcome, lo
         conn.execute('''
             INSERT INTO stats (
                 player_id, game_id, points, rebounds, assists, steals, blocks,
-                turnovers, fouls, minutes, airballs, bozo_moments
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                turnovers, airballs, bozo_moments, fg, fga, rating, notes
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             stat['player_id'], game_id, stat['points'], stat['rebounds'], stat['assists'],
-            stat['steals'], stat['blocks'], stat['turnovers'], stat['fouls'], stat['minutes'],
-            stat['airballs'], stat['bozo_moments']
+            stat['steals'], stat['blocks'], stat['turnovers'],
+            stat['airballs'], stat['bozo_moments'], stat['fg'], stat['fga'], stat['rating'], stat['notes']
         ))
     conn.commit()
     conn.close()
@@ -168,10 +164,11 @@ def get_player_averages():
                ROUND(AVG(s.steals), 1) as avg_steals,
                ROUND(AVG(s.blocks), 1) as avg_blocks,
                ROUND(AVG(s.turnovers), 1) as avg_turnovers,
-               ROUND(AVG(s.fouls), 1) as avg_fouls,
-               ROUND(AVG(s.minutes), 1) as avg_minutes,
                ROUND(AVG(s.airballs), 1) as avg_airballs,
-               ROUND(AVG(s.bozo_moments), 1) as avg_bozo_moments
+               ROUND(AVG(s.bozo_moments), 1) as avg_bozo_moments,
+               ROUND(AVG(s.fg), 1) as avg_fg,
+               ROUND(AVG(s.fga), 1) as avg_fga,
+               ROUND(AVG(s.rating), 1) as avg_rating
         FROM players p
         LEFT JOIN stats s ON p.id = s.player_id
         GROUP BY p.id
@@ -183,14 +180,12 @@ def get_player_averages():
     for avg in averages:
         row = dict(avg)
         if row['games_played'] > 0:
-            row['avg_mvi'] = round(calculate_mvi(
-                row['avg_points'], row['avg_rebounds'], row['avg_assists'], row['avg_steals'], row['avg_blocks'],
-                row['avg_turnovers'], row['avg_fouls'], row['avg_airballs'], row['avg_bozo_moments']
-            ), 1)
+            row['avg_fg_pct'] = round((row['avg_fg'] / row['avg_fga'] * 100.0), 1) if row['avg_fga'] > 0 else 0.0
         else:
-            row['avg_mvi'] = 0.0
+            row['avg_rating'] = 0.0
+            row['avg_fg_pct'] = 0.0
             for key in ['avg_points', 'avg_rebounds', 'avg_assists', 'avg_steals', 'avg_blocks', 
-                        'avg_turnovers', 'avg_fouls', 'avg_minutes', 'avg_airballs', 'avg_bozo_moments']:
+                        'avg_turnovers', 'avg_airballs', 'avg_bozo_moments', 'avg_fg', 'avg_fga']:
                 row[key] = 0.0
         averages_list.append(row)
 
@@ -207,10 +202,11 @@ def get_player_totals():
                SUM(s.steals) as total_steals,
                SUM(s.blocks) as total_blocks,
                SUM(s.turnovers) as total_turnovers,
-               SUM(s.fouls) as total_fouls,
-               SUM(s.minutes) as total_minutes,
                SUM(s.airballs) as total_airballs,
-               SUM(s.bozo_moments) as total_bozo_moments
+               SUM(s.bozo_moments) as total_bozo_moments,
+               SUM(s.fg) as total_fg,
+               SUM(s.fga) as total_fga,
+               ROUND(AVG(s.rating), 1) as avg_rating
         FROM players p
         LEFT JOIN stats s ON p.id = s.player_id
         GROUP BY p.id
@@ -222,16 +218,13 @@ def get_player_totals():
     for tot in totals:
         row = dict(tot)
         if row['games_played'] > 0:
-            row['total_mvi'] = round(calculate_mvi(
-                row['total_points'] or 0, row['total_rebounds'] or 0, row['total_assists'] or 0, 
-                row['total_steals'] or 0, row['total_blocks'] or 0, row['total_turnovers'] or 0, 
-                row['total_fouls'] or 0, row['total_airballs'] or 0, row['total_bozo_moments'] or 0
-            ), 1)
+            row['total_fg_pct'] = round((row['total_fg'] / row['total_fga'] * 100.0), 1) if row['total_fga'] > 0 else 0.0
         else:
-            row['total_mvi'] = 0.0
+            row['avg_rating'] = 0.0
+            row['total_fg_pct'] = 0.0
             # Replace None with 0 for display
             for key in ['total_points', 'total_rebounds', 'total_assists', 'total_steals', 'total_blocks', 
-                        'total_turnovers', 'total_fouls', 'total_minutes', 'total_airballs', 'total_bozo_moments']:
+                        'total_turnovers', 'total_airballs', 'total_bozo_moments', 'total_fg', 'total_fga']:
                 row[key] = 0
         totals_list.append(row)
 
@@ -246,9 +239,9 @@ def get_single_game_records():
         ('steals', 'Steals', '🥩 Most Steals'),
         ('blocks', 'Blocks', '🛡️ Most Blocks'),
         ('turnovers', 'Turnovers', '💥 Most Turnovers'),
-        ('fouls', 'Fouls', '⚠️ Most Fouls'),
         ('airballs', 'Airballs', '💨 Most Airballs'),
-        ('bozo_moments', 'Bozo Moments', '🤡 Most Bozo Moments')
+        ('bozo_moments', 'Bozo Moments', '🤡 Most Bozo Moments'),
+        ('rating', 'Rating', '⭐ Highest Rating')
     ]
     
     records = []
@@ -283,98 +276,69 @@ def seed_db():
     # Check if we have players already
     player_count = conn.execute('SELECT COUNT(*) FROM players').fetchone()[0]
     if player_count > 0:
-        conn.close()
-        return
-
-    # Seed players
-    players_data = [
-        ("John Andreou", "50", "Big Man John"),
-        ("Phillip Lee", "21", "Phlig"),
-        ("Maxwell Glaubinger", "6", "GlubGlub"),
-        ("Noah Shulman", "0", "Shylock Holmes"),
-        ("Michael Abrams", "22", "Mikel"),
-        ("Jack Slivken", "8", "Slivy"),
-        ("Patrick Rossiello", "17", "Buckets"),
-        ("Nik Gundrum", "11", "Gunny"),
-        ("Stephen Kruse", "18", "Goose")
-    ]
-    cursor = conn.cursor()
-    cursor.executemany(
-        'INSERT INTO players (name, jersey_number, nickname) VALUES (?, ?, ?)',
-        players_data
-    )
-    conn.commit()
+        # If games exist, don't re-seed
+        game_count = conn.execute('SELECT COUNT(*) FROM games').fetchone()[0]
+        if game_count > 0:
+            conn.close()
+            return
+    else:
+        # Seed players
+        players_data = [
+            ("John Andreou", "50", "Big Man John"),
+            ("Phillip Lee", "21", "Phlig"),
+            ("Maxwell Glaubinger", "6", "GlubGlub"),
+            ("Noah Shulman", "0", "Shylock Holmes"),
+            ("Michael Abrams", "22", "Mikel"),
+            ("Jack Slivken", "8", "Slivy"),
+            ("Patrick Rossiello", "17", "Buckets"),
+            ("Nik Gundrum", "11", "Gunny"),
+            ("Stephen Kruse", "18", "Goose")
+        ]
+        cursor = conn.cursor()
+        cursor.executemany(
+            'INSERT INTO players (name, jersey_number, nickname) VALUES (?, ?, ?)',
+            players_data
+        )
+        conn.commit()
 
     # Retrieve inserted player IDs
     players_rows = conn.execute('SELECT id, name FROM players').fetchall()
     players_map = {row['name']: row['id'] for row in players_rows}
 
-    # Seed 3 games
-    # Game 1 vs Bacon Blazers
+    # Seed exactly 1 game vs Legacy
+    cursor = conn.cursor()
     cursor.execute('''
         INSERT INTO games (opponent, date, cows_score, opponent_score, outcome, location)
-        VALUES ('Bacon Blazers', '2026-05-15', 115, 92, 'W', 'The Pasture (Home)')
+        VALUES ('Legacy', '2026-06-25', 39, 47, 'L', 'Bouncy rims court')
     ''')
-    game1_id = cursor.lastrowid
+    game_id = cursor.lastrowid
     
-    game1_stats = [
-        (players_map["John Andreou"], game1_id, 28, 10, 8, 2, 1, 3, 2, 36, 0, 0),
-        (players_map["Phillip Lee"], game1_id, 35, 5, 4, 3, 2, 2, 1, 38, 1, 0),
-        (players_map["Maxwell Glaubinger"], game1_id, 22, 3, 11, 1, 0, 4, 3, 34, 0, 1),
-        (players_map["Stephen Kruse"], game1_id, 10, 15, 1, 0, 4, 1, 4, 28, 2, 2),
-        (players_map["Michael Abrams"], game1_id, 3, 18, 2, 4, 1, 1, 5, 32, 0, 0),
-        (players_map["Noah Shulman"], game1_id, 6, 2, 4, 1, 0, 2, 2, 15, 1, 1),
-        (players_map["Jack Slivken"], game1_id, 4, 3, 1, 0, 1, 1, 1, 12, 0, 0),
-        (players_map["Patrick Rossiello"], game1_id, 5, 1, 2, 1, 0, 0, 1, 14, 0, 0),
-        (players_map["Nik Gundrum"], game1_id, 2, 5, 1, 1, 1, 1, 2, 15, 0, 1)
+    # Raw Legacy stats:
+    # (player_name, points, rebounds, assists, steals, blocks, turnovers, airballs, bozo_moments, fg, fga, notes)
+    raw_stats = [
+        ("Jack Slivken", 0, 1, 3, 0, 0, 0, 0, 0, 0, 3, "Good ball movement and passing."),
+        ("John Andreou", 0, 6, 2, 0, 0, 0, 0, 0, 0, 1, "Strong presence inside, solid rebounding."),
+        ("Michael Abrams", 7, 5, 5, 2, 0, 0, 0, 1, 3, 4, "Active on defense with 2 steals, set up teammates."),
+        ("Nik Gundrum", 16, 15, 2, 1, 2, 0, 0, 0, 7, 17, "Absolute beast under the basket. Dominated the boards with a massive double-double!"),
+        ("Noah Shulman", 4, 4, 0, 2, 0, 2, 0, 1, 1, 5, "Scored 4 but had some turnovers."),
+        ("Patrick Rossiello", 0, 6, 1, 0, 0, 1, 0, 1, 0, 1, "Grabbed 6 rebounds but had a bozo moment."),
+        ("Phillip Lee", 0, 1, 3, 1, 0, 0, 0, 0, 0, 2, "Pestered ball-handlers, good distribution."),
+        ("Stephen Kruse", 12, 3, 0, 0, 0, 2, 1, 1, 4, 9, "Solid scoring game with 12 points, but suffered 1 airball and a bozo moment.")
     ]
     
-    # Game 2 vs Porkers Spurs
-    cursor.execute('''
-        INSERT INTO games (opponent, date, cows_score, opponent_score, outcome, location)
-        VALUES ('Porkers Spurs', '2026-05-20', 103, 110, 'L', 'The Pigpen (Away)')
-    ''')
-    game2_id = cursor.lastrowid
-    
-    game2_stats = [
-        (players_map["John Andreou"], game2_id, 20, 8, 5, 1, 0, 6, 4, 32, 1, 2),
-        (players_map["Phillip Lee"], game2_id, 40, 6, 3, 2, 1, 1, 2, 40, 0, 0),
-        (players_map["Maxwell Glaubinger"], game2_id, 15, 2, 5, 0, 0, 2, 1, 30, 3, 0),
-        (players_map["Stephen Kruse"], game2_id, 8, 12, 0, 1, 3, 3, 5, 25, 1, 3),
-        (players_map["Michael Abrams"], game2_id, 2, 22, 1, 2, 2, 2, 4, 35, 0, 1),
-        (players_map["Noah Shulman"], game2_id, 5, 1, 3, 1, 0, 1, 1, 15, 1, 0),
-        (players_map["Jack Slivken"], game2_id, 3, 2, 2, 0, 1, 1, 2, 15, 0, 0),
-        (players_map["Patrick Rossiello"], game2_id, 4, 1, 1, 0, 0, 0, 1, 12, 0, 0),
-        (players_map["Nik Gundrum"], game2_id, 6, 3, 0, 1, 0, 1, 2, 16, 1, 1)
-    ]
+    game_stats = []
+    for row in raw_stats:
+        p_name, pts, reb, ast, stl, blk, to, air, bozo, fg, fga, notes = row
+        p_id = players_map[p_name]
+        rating = calculate_rating(pts, reb, ast, stl, blk, to, air, bozo, fg, fga)
+        game_stats.append((p_id, game_id, pts, reb, ast, stl, blk, to, air, bozo, fg, fga, rating, notes))
 
-    # Game 3 vs Milk Shakers
-    cursor.execute('''
-        INSERT INTO games (opponent, date, cows_score, opponent_score, outcome, location)
-        VALUES ('Milk Shakers', '2026-05-28', 132, 110, 'W', 'The Pasture (Home)')
-    ''')
-    game3_id = cursor.lastrowid
-    
-    game3_stats = [
-        (players_map["John Andreou"], game3_id, 30, 12, 12, 3, 2, 2, 3, 38, 0, 0),
-        (players_map["Phillip Lee"], game3_id, 32, 4, 6, 1, 1, 3, 2, 36, 0, 1),
-        (players_map["Maxwell Glaubinger"], game3_id, 38, 1, 4, 2, 0, 1, 2, 35, 1, 0),
-        (players_map["Stephen Kruse"], game3_id, 6, 8, 2, 0, 2, 4, 6, 20, 2, 2),
-        (players_map["Michael Abrams"], game3_id, 6, 15, 3, 5, 3, 0, 3, 33, 0, 0),
-        (players_map["Noah Shulman"], game3_id, 8, 2, 4, 1, 0, 1, 2, 16, 0, 0),
-        (players_map["Jack Slivken"], game3_id, 6, 4, 1, 1, 1, 1, 2, 15, 1, 1),
-        (players_map["Patrick Rossiello"], game3_id, 4, 2, 1, 0, 0, 0, 1, 14, 0, 0),
-        (players_map["Nik Gundrum"], game3_id, 2, 3, 1, 2, 1, 1, 1, 13, 0, 0)
-    ]
-
-    all_game_stats = game1_stats + game2_stats + game3_stats
     cursor.executemany('''
         INSERT INTO stats (
             player_id, game_id, points, rebounds, assists, steals, blocks,
-            turnovers, fouls, minutes, airballs, bozo_moments
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', all_game_stats)
-    
+            turnovers, airballs, bozo_moments, fg, fga, rating, notes
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', game_stats)
     conn.commit()
     conn.close()
 
