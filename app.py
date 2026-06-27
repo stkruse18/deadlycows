@@ -170,6 +170,8 @@ def new_game():
                 bozo_moments = int(request.form.get(f'bozo_moments_{p_id}', 0))
                 fg = int(request.form.get(f'fg_{p_id}', 0))
                 fga = int(request.form.get(f'fga_{p_id}', 0))
+                ft = int(request.form.get(f'ft_{p_id}', 0))
+                fta = int(request.form.get(f'fta_{p_id}', 0))
                 
                 # Dynamic rating calculation
                 rating = database.calculate_rating(
@@ -189,6 +191,8 @@ def new_game():
                     'bozo_moments': bozo_moments,
                     'fg': fg,
                     'fga': fga,
+                    'ft': ft,
+                    'fta': fta,
                     'rating': rating,
                     'notes': request.form.get(f'notes_{p_id}', '').strip()
                 }
@@ -244,6 +248,8 @@ def edit_game(game_id):
                 bozo_moments = int(request.form.get(f'bozo_moments_{p_id}', 0))
                 fg = int(request.form.get(f'fg_{p_id}', 0))
                 fga = int(request.form.get(f'fga_{p_id}', 0))
+                ft = int(request.form.get(f'ft_{p_id}', 0))
+                fta = int(request.form.get(f'fta_{p_id}', 0))
                 
                 # Dynamic rating calculation
                 rating = database.calculate_rating(
@@ -263,6 +269,8 @@ def edit_game(game_id):
                     'bozo_moments': bozo_moments,
                     'fg': fg,
                     'fga': fga,
+                    'ft': ft,
+                    'fta': fta,
                     'rating': rating,
                     'notes': request.form.get(f'notes_{p_id}', '').strip()
                 }

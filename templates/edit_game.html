@@ -64,6 +64,8 @@
                             <th style="text-align: center; width: 6%; color: var(--neon-green);">PTS</th>
                             <th style="text-align: center; width: 6%;">FG</th>
                             <th style="text-align: center; width: 6%;">FGA</th>
+                            <th style="text-align: center; width: 6%;">FT</th>
+                            <th style="text-align: center; width: 6%;">FTA</th>
                             <th style="text-align: center; width: 6%;">REB</th>
                             <th style="text-align: center; width: 6%;">AST</th>
                             <th style="text-align: center; width: 6%;">STL</th>
@@ -95,6 +97,12 @@
                                 </td>
                                 <td>
                                     <input type="number" name="fga_{{ p.id }}" class="input-mini" min="0" value="{{ p_stats.fga if has_stats else 0 }}">
+                                </td>
+                                <td>
+                                    <input type="number" name="ft_{{ p.id }}" class="input-mini" min="0" value="{{ p_stats.ft if has_stats else 0 }}">
+                                </td>
+                                <td>
+                                    <input type="number" name="fta_{{ p.id }}" class="input-mini" min="0" value="{{ p_stats.fta if has_stats else 0 }}">
                                 </td>
                                 <td>
                                     <input type="number" name="rebounds_{{ p.id }}" class="input-mini" min="0" value="{{ p_stats.rebounds if has_stats else 0 }}">
