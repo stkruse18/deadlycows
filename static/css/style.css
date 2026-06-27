@@ -862,28 +862,28 @@ footer p {
     }
 }
 
-/* Stacking card grid layout for vertical phone screens */
+/* Stacking card grid layout for vertical phone screens (Game Box Score only) */
 @media (max-width: 650px) {
     /* Disable sticky first column styling on small screens */
-    table.stats-table th:first-child,
-    table.stats-table td:first-child {
+    table.box-score-table th:first-child,
+    table.box-score-table td:first-child {
         position: static !important;
         background: transparent !important;
         box-shadow: none !important;
     }
     
-    table.stats-table thead {
+    table.box-score-table thead {
         display: none !important;
     }
     
-    table.stats-table, 
-    table.stats-table tbody, 
-    table.stats-table tr {
+    table.box-score-table, 
+    table.box-score-table tbody, 
+    table.box-score-table tr {
         display: block !important;
         width: 100% !important;
     }
     
-    table.stats-table tr {
+    table.box-score-table tr {
         background: rgba(255, 255, 255, 0.02) !important;
         border: 1px solid var(--border-color) !important;
         border-radius: 12px !important;
@@ -895,7 +895,7 @@ footer p {
     }
     
     /* First cell spans full width and shows player name/awards */
-    table.stats-table tr td:first-child {
+    table.box-score-table tr td:first-child {
         grid-column: span 3 !important;
         border-bottom: 1px solid var(--border-color) !important;
         padding-bottom: 0.6rem !important;
@@ -905,7 +905,7 @@ footer p {
     }
     
     /* Notes cell spans full width at the bottom */
-    table.stats-table tr td.notes-cell {
+    table.box-score-table tr td.notes-cell {
         grid-column: span 3 !important;
         border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
         padding-top: 0.6rem !important;
@@ -915,7 +915,7 @@ footer p {
     }
     
     /* Style normal stats cells into blocks */
-    table.stats-table td:not(:first-child):not(.notes-cell) {
+    table.box-score-table td:not(:first-child):not(.notes-cell) {
         display: flex !important;
         flex-direction: column !important;
         align-items: center !important;
@@ -928,7 +928,7 @@ footer p {
     }
     
     /* Add labels above value */
-    table.stats-table td:not(:first-child):not(.notes-cell)::before {
+    table.box-score-table td:not(:first-child):not(.notes-cell)::before {
         content: attr(data-label) !important;
         font-size: 0.7rem !important;
         text-transform: uppercase !important;
