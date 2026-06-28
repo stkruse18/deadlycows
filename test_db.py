@@ -49,9 +49,11 @@ def test_database():
     stephen = [s for s in stats if s['name'] == "Stephen Kruse"][0]
     assert stephen['rating'] == 74, f"Stephen rating expected 74, got {stephen['rating']}"
     assert stephen['fg'] == 4, f"Stephen fg expected 4, got {stephen['fg']}"
-    assert stephen['fga'] == 9, f"Stephen fga expected 9, got {stephen['fga']}"
+    assert stephen['fga'] == 10, f"Stephen fga expected 10, got {stephen['fga']}"
+    assert stephen['three_pt'] == 4, f"Stephen three_pt expected 4, got {stephen['three_pt']}"
+    assert stephen['three_pta'] == 8, f"Stephen three_pta expected 8, got {stephen['three_pta']}"
     assert stephen['notes'] == "Bozo: Shot a buzzer beater airball with 3 seconds left", f"Stephen notes incorrect: {stephen['notes']}"
-    print("✓ Stephen Kruse stats, field goals (4/9), computed rating (74), and custom note verified.")
+    print("✓ Stephen Kruse stats, field goals (4/10), 3-pointers (4/8), computed rating (74), and custom note verified.")
     
     # Verify awards: Moo-VP is Nik Gundrum (highest rating: 98) and LIP is Patrick Rossiello (lowest rating: 69)
     assert moo_vp['name'] == 'Nik Gundrum', f"Expected Moo-VP Nik Gundrum, got {moo_vp['name']}"
@@ -67,6 +69,8 @@ def test_database():
     assert nik_avg['avg_fga'] == 17.0
     assert nik_avg['avg_ft'] == 0.0
     assert nik_avg['avg_fta'] == 1.0
+    assert nik_avg['avg_three_pt'] == 2.0
+    assert nik_avg['avg_three_pta'] == 7.0
     print("✓ Player averages retrieved successfully.")
     
     totals = database.get_player_totals()

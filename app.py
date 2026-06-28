@@ -172,6 +172,8 @@ def new_game():
                 fga = int(request.form.get(f'fga_{p_id}', 0))
                 ft = int(request.form.get(f'ft_{p_id}', 0))
                 fta = int(request.form.get(f'fta_{p_id}', 0))
+                three_pt = int(request.form.get(f'three_pt_{p_id}', 0))
+                three_pta = int(request.form.get(f'three_pta_{p_id}', 0))
                 
                 # Dynamic rating calculation
                 rating = database.calculate_rating(
@@ -193,6 +195,8 @@ def new_game():
                     'fga': fga,
                     'ft': ft,
                     'fta': fta,
+                    'three_pt': three_pt,
+                    'three_pta': three_pta,
                     'rating': rating,
                     'notes': request.form.get(f'notes_{p_id}', '').strip()
                 }
@@ -250,6 +254,8 @@ def edit_game(game_id):
                 fga = int(request.form.get(f'fga_{p_id}', 0))
                 ft = int(request.form.get(f'ft_{p_id}', 0))
                 fta = int(request.form.get(f'fta_{p_id}', 0))
+                three_pt = int(request.form.get(f'three_pt_{p_id}', 0))
+                three_pta = int(request.form.get(f'three_pta_{p_id}', 0))
                 
                 # Dynamic rating calculation
                 rating = database.calculate_rating(
@@ -271,6 +277,8 @@ def edit_game(game_id):
                     'fga': fga,
                     'ft': ft,
                     'fta': fta,
+                    'three_pt': three_pt,
+                    'three_pta': three_pta,
                     'rating': rating,
                     'notes': request.form.get(f'notes_{p_id}', '').strip()
                 }

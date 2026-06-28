@@ -35,6 +35,8 @@ CREATE TABLE stats (
     fga INTEGER NOT NULL DEFAULT 0,
     ft INTEGER NOT NULL DEFAULT 0,
     fta INTEGER NOT NULL DEFAULT 0,
+    three_pt INTEGER NOT NULL DEFAULT 0,
+    three_pta INTEGER NOT NULL DEFAULT 0,
     rating INTEGER NOT NULL DEFAULT 60, -- Overall Performance Rating (60-99)
     notes TEXT NOT NULL DEFAULT '', -- Game notes for the player
     FOREIGN KEY(player_id) REFERENCES players(id) ON DELETE CASCADE,
