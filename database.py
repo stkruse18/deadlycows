@@ -304,7 +304,9 @@ def seed_db():
             ("Jack Slivken", "8", "Slivy"),
             ("Patrick Rossiello", "17", "Buckets"),
             ("Nik Gundrum", "11", "Gunny"),
-            ("Stephen Kruse", "18", "Goose")
+            ("Stephen Kruse", "18", "Goose"),
+            ("David Malitz", "N/A", "Money Malitz"),
+            ("Chris Andreou", "N/A", "Big Man Chris")
         ]
         cursor = conn.cursor()
         cursor.executemany(
@@ -317,17 +319,16 @@ def seed_db():
     players_rows = conn.execute('SELECT id, name FROM players').fetchall()
     players_map = {row['name']: row['id'] for row in players_rows}
 
-    # Seed exactly 1 game vs Legacy
     cursor = conn.cursor()
+    
+    # 1. Seed Legacy Game
     cursor.execute('''
         INSERT INTO games (opponent, date, cows_score, opponent_score, outcome, location)
         VALUES ('Legacy', '2026-06-25', 39, 47, 'L', 'Bouncy rims court')
     ''')
-    game_id = cursor.lastrowid
+    game1_id = cursor.lastrowid
     
-    # Raw Legacy stats:
-    # (player_name, points, rebounds, assists, steals, blocks, turnovers, airballs, bozo_moments, fg, fga, ft, fta, three_pt, three_pta, notes)
-    raw_stats = [
+    raw_stats1 = [
         ("Jack Slivken", 0, 1, 3, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, ""),
         ("John Andreou", 0, 6, 2, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, ""),
         ("Michael Abrams", 7, 5, 5, 2, 0, 0, 0, 1, 3, 4, 1, 4, 0, 0, "Bozo: violation on missed free throw"),
@@ -339,11 +340,34 @@ def seed_db():
     ]
     
     game_stats = []
-    for row in raw_stats:
+    for row in raw_stats1:
         p_name, pts, reb, ast, stl, blk, to, air, bozo, fg, fga, ft, fta, three_pt, three_pta, notes = row
         p_id = players_map[p_name]
         rating = calculate_rating(pts, reb, ast, stl, blk, to, air, bozo, fg, fga)
-        game_stats.append((p_id, game_id, pts, reb, ast, stl, blk, to, air, bozo, fg, fga, ft, fta, three_pt, three_pta, rating, notes))
+        game_stats.append((p_id, game1_id, pts, reb, ast, stl, blk, to, air, bozo, fg, fga, ft, fta, three_pt, three_pta, rating, notes))
+
+    # 2. Seed Daddy's Home Game
+    cursor.execute('''
+        INSERT INTO games (opponent, date, cows_score, opponent_score, outcome, location)
+        VALUES ('Daddy''s Home', '2026-07-09', 48, 50, 'L', 'The Pasture (Home)')
+    ''')
+    game2_id = cursor.lastrowid
+    
+    raw_stats2 = [
+        ("Chris Andreou", 5, 3, 2, 0, 1, 0, 1, 1, 2, 10, 0, 0, 1, 5, "Ball teleported out of his hands into the opponent"),
+        ("David Malitz", 24, 7, 0, 0, 1, 2, 0, 0, 10, 24, 1, 1, 3, 13, ""),
+        ("John Andreou", 0, 7, 3, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, ""),
+        ("Nik Gundrum", 9, 10, 2, 2, 0, 0, 0, 0, 4, 16, 0, 1, 1, 5, ""),
+        ("Noah Shulman", 7, 10, 1, 4, 0, 2, 0, 2, 3, 7, 0, 0, 1, 2, "Ran out of bounds, missed layup in clutch time"),
+        ("Patrick Rossiello", 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, ""),
+        ("Stephen Kruse", 3, 3, 2, 0, 0, 2, 1, 1, 1, 6, 0, 0, 1, 6, "Dribbled out of bounds")
+    ]
+    
+    for row in raw_stats2:
+        p_name, pts, reb, ast, stl, blk, to, air, bozo, fg, fga, ft, fta, three_pt, three_pta, notes = row
+        p_id = players_map[p_name]
+        rating = calculate_rating(pts, reb, ast, stl, blk, to, air, bozo, fg, fga)
+        game_stats.append((p_id, game2_id, pts, reb, ast, stl, blk, to, air, bozo, fg, fga, ft, fta, three_pt, three_pta, rating, notes))
 
     cursor.executemany('''
         INSERT INTO stats (

@@ -13,17 +13,18 @@ def test_database():
     
     # 3. Test players retrieval
     players = database.get_all_players()
-    assert len(players) == 9, f"Expected 9 players, got {len(players)}"
-    print("✓ Successfully loaded 9 players.")
+    assert len(players) == 11, f"Expected 11 players, got {len(players)}"
+    print("✓ Successfully loaded 11 players.")
     
     # 4. Test games retrieval
     games = database.get_all_games()
-    assert len(games) == 1, f"Expected 1 game, got {len(games)}"
-    assert games[0]['opponent'] == 'Legacy', f"Expected opponent Legacy, got {games[0]['opponent']}"
-    print("✓ Successfully loaded 1 game (Legacy).")
+    assert len(games) == 2, f"Expected 2 games, got {len(games)}"
+    assert games[1]['opponent'] == 'Legacy', f"Expected opponent Legacy, got {games[1]['opponent']}"
+    assert games[0]['opponent'] == "Daddy's Home", f"Expected opponent Daddy's Home, got {games[0]['opponent']}"
+    print("✓ Successfully loaded 2 games (Daddy's Home, Legacy).")
     
     # 5. Check Legacy Game Stats & Ratings
-    legacy_game = games[0]
+    legacy_game = games[1]
     stats, moo_vp, lip = database.get_game_stats(legacy_game['id'])
     
     assert len(stats) == 8, f"Expected 8 stats rows, got {len(stats)}"
@@ -63,18 +64,18 @@ def test_database():
     
     # 6. Test Averages and Totals
     averages = database.get_player_averages()
-    assert len(averages) == 9
+    assert len(averages) == 11, f"Expected 11 player averages, got {len(averages)}"
     nik_avg = [a for a in averages if a['name'] == 'Nik Gundrum'][0]
-    assert nik_avg['avg_fg'] == 7.0
-    assert nik_avg['avg_fga'] == 17.0
-    assert nik_avg['avg_ft'] == 0.0
-    assert nik_avg['avg_fta'] == 1.0
-    assert nik_avg['avg_three_pt'] == 2.0
-    assert nik_avg['avg_three_pta'] == 7.0
+    assert nik_avg['avg_fg'] == 5.5, f"Expected avg_fg 5.5, got {nik_avg['avg_fg']}"
+    assert nik_avg['avg_fga'] == 16.5, f"Expected avg_fga 16.5, got {nik_avg['avg_fga']}"
+    assert nik_avg['avg_ft'] == 0.0, f"Expected avg_ft 0.0, got {nik_avg['avg_ft']}"
+    assert nik_avg['avg_fta'] == 1.0, f"Expected avg_fta 1.0, got {nik_avg['avg_fta']}"
+    assert nik_avg['avg_three_pt'] == 1.5, f"Expected avg_three_pt 1.5, got {nik_avg['avg_three_pt']}"
+    assert nik_avg['avg_three_pta'] == 6.0, f"Expected avg_three_pta 6.0, got {nik_avg['avg_three_pta']}"
     print("✓ Player averages retrieved successfully.")
     
     totals = database.get_player_totals()
-    assert len(totals) == 9
+    assert len(totals) == 11, f"Expected 11 player totals, got {len(totals)}"
     print("✓ Player totals retrieved successfully.")
     
     print("\nALL DATABASE TESTS PASSED SUCCESSFULLY!")
