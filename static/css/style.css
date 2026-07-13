@@ -84,7 +84,7 @@ header {
 }
 
 .nav-container {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
     display: flex;
     justify-content: space-between;
@@ -148,7 +148,7 @@ header {
 
 /* Layout Main Container */
 main {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 2rem auto 4rem;
     padding: 0 2rem;
 }
@@ -475,12 +475,13 @@ table.stats-table {
 }
 
 table.stats-table th {
-    padding: 1rem;
+    padding: 0.8rem 0.6rem;
     font-family: var(--font-mono);
     font-size: 0.85rem;
     text-transform: uppercase;
     color: var(--text-secondary);
     border-bottom: 2px solid rgba(255, 255, 255, 0.08);
+    white-space: nowrap;
 }
 
 table.stats-table th.sortable:hover {
@@ -489,9 +490,14 @@ table.stats-table th.sortable:hover {
 }
 
 table.stats-table td {
-    padding: 1rem;
+    padding: 0.8rem 0.6rem;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     font-size: 0.95rem;
+    white-space: nowrap;
+}
+
+table.stats-table td.notes-cell {
+    white-space: normal;
 }
 
 table.stats-table tr:hover td {
