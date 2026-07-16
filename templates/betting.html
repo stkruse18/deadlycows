@@ -241,6 +241,14 @@
                     <!-- Injected dynamically by betslip.js -->
                 </div>
 
+                <div id="betslip-actions-section" style="display: none; margin-bottom: 2rem;">
+                    <div id="betslip-error-msg" style="color: var(--neon-red); text-shadow: 0 0 5px var(--neon-red-glow); font-size: 0.8rem; margin-bottom: 0.8rem; display: none; font-family: var(--font-mono);"></div>
+                    <div style="display: flex; gap: 0.8rem;">
+                        <button type="button" id="betslip-clear-btn" class="btn btn-secondary" onclick="clearBetslip()" style="flex: 1; font-size: 0.8rem; padding: 0.5rem 0; font-family: var(--font-mono);">Clear</button>
+                        <button type="button" id="betslip-submit-btn" class="btn btn-primary" onclick="submitBetslip()" style="flex: 2; font-size: 0.8rem; padding: 0.5rem 0; font-family: var(--font-header); letter-spacing: 1px; text-transform: uppercase;">Submit Wagers</button>
+                    </div>
+                </div>
+
                 <!-- User Placed Wagers History -->
                 <h2 style="font-family: var(--font-header); text-transform: uppercase; font-size: 1.2rem; margin-top: 2rem; margin-bottom: 1rem; color: var(--text-primary);">📝 My Tickets</h2>
                 <div class="props-list">
