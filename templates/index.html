@@ -13,9 +13,12 @@
         <p class="hero-subtitle">
             Grazing the boards, churning the defense, and milking the opposition. Welcome to the official pasture of the most feared basketball team on the asphalt.
         </p>
-        <div style="display: flex; gap: 1rem;">
-            <a href="{{ url_for('averages') }}" class="btn btn-primary">Check Roster Stats</a>
-            <a href="#recent-slaughters" class="btn btn-secondary">Recent Games</a>
+        <div style="display: flex; flex-direction: column; gap: 0.8rem; width: fit-content;">
+            <div style="display: flex; gap: 1rem;">
+                <a href="{{ url_for('averages') }}" class="btn btn-primary">Check Roster Stats</a>
+                <a href="#recent-slaughters" class="btn btn-secondary">Recent Games</a>
+            </div>
+            <a href="{{ url_for('betting') }}" class="btn btn-primary" style="background: var(--neon-gold); border-color: var(--neon-gold); color: var(--bg-color) !important; font-weight: bold; text-align: center;">Deadly Cows Betting</a>
         </div>
     </div>
     <div class="hero-image-wrapper">
