@@ -86,8 +86,13 @@ class PostgresConnectionWrapper:
 def get_db_connection():
     if DATABASE_URL:
         # Use Postgres in production / cloud environment
-        raw_conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
-        return PostgresConnectionWrapper(raw_conn)
+        try:
+            raw_conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
+            return PostgresConnectionWrapper(raw_conn)
+        except Exception as e:
+            import sys
+            print(f"DATABASE CONNECTION ERROR: {e}", file=sys.stderr)
+            raise e
     else:
         # Fallback to local SQLite file
         conn = sqlite3.connect(DB_PATH)
