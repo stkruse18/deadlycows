@@ -108,6 +108,7 @@ def init_db():
     schema_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'schema.sql')
     with open(schema_path, 'r') as f:
         conn.executescript(f.read())
+    conn.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('betting_paused', 'false');")
     conn.commit()
     conn.close()
 
@@ -513,12 +514,12 @@ def get_betting_user(user_id):
     conn.close()
     return dict(user) if user else None
 
-def create_prop(game_id, prop_type, player_id, line_value, odds_over, odds_under, description):
+def create_prop(game_id, prop_type, player_id, line_value, odds_over, odds_under, description, category='player', display_order=0):
     conn = get_db_connection()
     conn.execute('''
-        INSERT INTO props (game_id, prop_type, player_id, line_value, odds_over, odds_under, description, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, 'open')
-    ''', (game_id, prop_type, player_id or None, line_value, odds_over, odds_under, description))
+        INSERT INTO props (game_id, prop_type, player_id, line_value, odds_over, odds_under, description, status, category, display_order)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 'open', ?, ?)
+    ''', (game_id, prop_type, player_id or None, line_value, odds_over, odds_under, description, category, display_order))
     conn.commit()
     conn.close()
 
@@ -530,7 +531,7 @@ def get_active_props():
         JOIN games g ON pr.game_id = g.id
         LEFT JOIN players pl ON pr.player_id = pl.id
         WHERE pr.status = 'open'
-        ORDER BY g.date DESC, pr.id ASC
+        ORDER BY pr.display_order ASC, g.date DESC, pr.id ASC
     ''').fetchall()
     conn.close()
     return [dict(p) for p in props]
@@ -542,7 +543,7 @@ def get_props_for_game(game_id):
         FROM props pr
         LEFT JOIN players pl ON pr.player_id = pl.id
         WHERE pr.game_id = ?
-        ORDER BY pr.id ASC
+        ORDER BY pr.display_order ASC, pr.id ASC
     ''', (game_id,)).fetchall()
     conn.close()
     return [dict(p) for p in props]
@@ -604,6 +605,9 @@ def calculate_parlay_odds(odds_list):
     return decimal_to_american(total_decimal)
 
 def place_bets(user_id, selections, is_parlay=False, parlay_wager=0):
+    if is_betting_paused():
+        return False, "🔒 Betting is currently paused by admin (Live Game In Progress)."
+
     if not selections:
         return False, "No selections provided"
         
@@ -827,6 +831,42 @@ def auto_grade_game_props(game_id):
         if outcome:
             grade_single_prop_conn(conn, prop_id, outcome)
 
+    conn.commit()
+    conn.close()
+
+def is_betting_paused():
+    try:
+        conn = get_db_connection()
+        val = conn.execute("SELECT value FROM settings WHERE key = 'betting_paused'").fetchone()
+        conn.close()
+        return val is not None and val['value'] == 'true'
+    except Exception:
+        return False
+
+def set_betting_paused(paused):
+    conn = get_db_connection()
+    val_str = 'true' if paused else 'false'
+    exists = conn.execute("SELECT 1 FROM settings WHERE key = 'betting_paused'").fetchone()
+    if exists:
+        conn.execute("UPDATE settings SET value = ? WHERE key = 'betting_paused'", (val_str,))
+    else:
+        conn.execute("INSERT INTO settings (key, value) VALUES ('betting_paused', ?)", (val_str,))
+    conn.commit()
+    conn.close()
+
+def get_prop(prop_id):
+    conn = get_db_connection()
+    prop = conn.execute("SELECT * FROM props WHERE id = ?", (prop_id,)).fetchone()
+    conn.close()
+    return dict(prop) if prop else None
+
+def update_prop(prop_id, game_id, prop_type, player_id, line_value, odds_over, odds_under, description, category, display_order):
+    conn = get_db_connection()
+    conn.execute('''
+        UPDATE props
+        SET game_id = ?, prop_type = ?, player_id = ?, line_value = ?, odds_over = ?, odds_under = ?, description = ?, category = ?, display_order = ?
+        WHERE id = ?
+    ''', (game_id, prop_type, player_id or None, line_value, odds_over, odds_under, description, category, display_order, prop_id))
     conn.commit()
     conn.close()
 

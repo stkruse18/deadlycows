@@ -181,6 +181,67 @@ def test_database():
     assert user_final_parlay['balance'] == 100191, f"Expected final parlay balance of 100191, got {user_final_parlay['balance']}"
     print("✓ Successfully graded parlay and verified correct multiplied payout.")
 
+    # --- New Feature Verification Tests (Toggling Pause, Editing, Categories, and Ordering) ---
+    print("\nRunning New Features (Pause, Edit, Order, Category) tests...")
+    
+    # 1. Verify defaults and toggle pause
+    assert database.is_betting_paused() is False, "Expected betting_paused to default to False"
+    database.set_betting_paused(True)
+    assert database.is_betting_paused() is True, "Expected betting_paused to be True after toggling"
+    
+    # 2. Placing a bet when paused should fail
+    paused_bet_ok, paused_bet_msg = database.place_bets(user['id'], [{'prop_id': p_rebounds['id'], 'selection': 'over', 'wager_amount': 100}])
+    assert paused_bet_ok is False, "Expected bet placement to fail when betting is paused"
+    assert "paused" in paused_bet_msg.lower(), f"Expected message to mention paused, got: {paused_bet_msg}"
+    print("✓ Successfully rejected bet placement when betting is paused.")
+    
+    # Resume betting for subsequent tests
+    database.set_betting_paused(False)
+    assert database.is_betting_paused() is False
+    
+    # 3. Create prop with custom category and display_order
+    database.create_prop(legacy_game_id, "custom", None, 0.5, 110, -110, "Custom Team Prop A", category="team", display_order=-5)
+    database.create_prop(legacy_game_id, "custom", None, 0.5, 110, -110, "Custom Team Prop B", category="team", display_order=10)
+    
+    active_props3 = database.get_active_props()
+    # Confirm Team Prop A sorts before Team Prop B
+    prop_a = [p for p in active_props3 if p['description'] == "Custom Team Prop A"][0]
+    prop_b = [p for p in active_props3 if p['description'] == "Custom Team Prop B"][0]
+    
+    assert prop_a['category'] == 'team', "Expected category to be 'team'"
+    assert prop_a['display_order'] == -5, "Expected display_order to be -5"
+    assert prop_b['display_order'] == 10, "Expected display_order to be 10"
+    
+    # Assert prop_a is positioned earlier in active_props3 than prop_b
+    idx_a = active_props3.index(prop_a)
+    idx_b = active_props3.index(prop_b)
+    assert idx_a < idx_b, "Expected prop_a with lower display_order to sort before prop_b"
+    print("✓ Successfully verified custom prop categories and display order sorting.")
+    
+    # 4. Edit an existing prop line
+    prop_to_edit = prop_b
+    database.update_prop(
+        prop_id=prop_to_edit['id'],
+        game_id=prop_to_edit['game_id'],
+        prop_type="custom",
+        player_id=None,
+        line_value=1.5,
+        odds_over=120,
+        odds_under=-120,
+        description="Updated Prop B Description",
+        category="player",
+        display_order=20
+    )
+    
+    edited_prop = database.get_prop(prop_to_edit['id'])
+    assert edited_prop['description'] == "Updated Prop B Description", "Expected description to be updated"
+    assert edited_prop['line_value'] == 1.5, "Expected line_value to be updated"
+    assert edited_prop['odds_over'] == 120, "Expected odds_over to be updated"
+    assert edited_prop['odds_under'] == -120, "Expected odds_under to be updated"
+    assert edited_prop['category'] == 'player', "Expected category to be updated"
+    assert edited_prop['display_order'] == 20, "Expected display_order to be updated"
+    print("✓ Successfully verified get_prop and update_prop (prop editing).")
+
     print("\nALL DATABASE & BETTING TESTS PASSED SUCCESSFULLY!")
 
 if __name__ == '__main__':

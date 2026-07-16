@@ -1659,3 +1659,96 @@ footer p {
     border-bottom-color: var(--neon-green);
 }
 
+/* Mobile Navigation & Compact Betting Styles */
+@media (max-width: 768px) {
+    .nav-container {
+        flex-wrap: wrap !important;
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        padding: 0.8rem 1rem !important;
+    }
+    
+    .nav-menu {
+        display: none;
+        width: 100%;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.8rem;
+        margin-top: 1rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+        padding-top: 1rem;
+    }
+
+    .nav-menu.show-menu {
+        display: flex !important;
+    }
+    
+    .logo-link {
+        cursor: pointer;
+    }
+
+    /* Stack grid elements vertically */
+    .betting-grid {
+        grid-template-columns: 1fr !important;
+        gap: 1.5rem !important;
+    }
+    
+    /* Make prop cards compact */
+    .props-board h2 {
+        font-size: 1.2rem !important;
+        margin-top: 1rem !important;
+    }
+    
+    .prop-card {
+        padding: 0.6rem 0.8rem !important;
+        margin-bottom: 0.6rem !important;
+        border-radius: 8px !important;
+    }
+    
+    .prop-card::before {
+        width: 3px !important;
+    }
+    
+    .prop-header {
+        margin-bottom: 0.2rem !important;
+    }
+    
+    .prop-game-info {
+        font-size: 0.7rem !important;
+    }
+    
+    .prop-desc {
+        font-size: 0.82rem !important;
+        margin-bottom: 0.4rem !important;
+        line-height: 1.2 !important;
+    }
+    
+    .bet-options-row {
+        margin-top: 0.4rem !important;
+        gap: 0.4rem !important;
+    }
+    
+    .selection-label-btn {
+        padding: 0.35rem 0.5rem !important;
+        font-size: 0.72rem !important;
+        border-radius: 6px !important;
+    }
+}
+
+/* Betting Paused styles */
+.selection-label-btn.paused-disabled {
+    opacity: 0.4;
+    cursor: not-allowed !important;
+    border-color: rgba(255, 255, 255, 0.05) !important;
+    background: rgba(0, 0, 0, 0.2) !important;
+    color: var(--text-secondary) !important;
+}
+
+.selection-label-btn.paused-disabled:hover {
+    background: rgba(0, 0, 0, 0.2) !important;
+    color: var(--text-secondary) !important;
+    box-shadow: none !important;
+    border-color: rgba(255, 255, 255, 0.05) !important;
+}
+

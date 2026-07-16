@@ -14,8 +14,26 @@
 
     <h1>⚙️ Barn Bookie Controls</h1>
     <p style="color: var(--text-secondary); margin-bottom: 2rem;">
-        Log props for upcoming games, delete active props (which refunds users), and manually grade custom props.
+        Log props for upcoming games, toggle betting states, edit prop details, and manually grade completed props.
     </p>
+
+    <!-- Betting Pause Toggle Panel -->
+    <div class="prop-card" style="padding: 1.5rem; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; border-color: {% if betting_paused %}var(--neon-red){% else %}var(--border-color){% endif %};">
+        <div>
+            <h3 style="margin-bottom: 0.3rem; font-family: var(--font-header); text-transform: uppercase;">Global Betting Control</h3>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0;">
+                Current Status: 
+                <strong style="color: {% if betting_paused %}var(--neon-red){% else %}var(--neon-green){% endif %}; text-transform: uppercase; font-family: var(--font-mono);">
+                    {% if betting_paused %}🔒 PAUSED (Game in Progress){% else %}🟢 ACTIVE (Taking Bets){% endif %}
+                </strong>
+            </p>
+        </div>
+        <form action="{{ url_for('toggle_betting_pause') }}" method="POST" style="margin: 0;">
+            <button type="submit" class="place-bet-btn" style="padding: 0.6rem 1.5rem; font-size: 0.85rem; border-color: {% if betting_paused %}var(--neon-green){% else %}var(--neon-red){% endif %}; color: {% if betting_paused %}var(--neon-green){% else %}var(--neon-red){% endif %}; background: transparent; cursor: pointer; text-transform: uppercase; font-family: var(--font-header);">
+                {% if betting_paused %}▶️ Resume Betting{% else %}⏸️ Pause Betting{% endif %}
+            </button>
+        </form>
+    </div>
 
     <!-- Admin Props Grid -->
     <div class="admin-props-grid">
@@ -64,6 +82,14 @@
                     </div>
 
                     <div class="auth-form-group">
+                        <label for="category">Prop Category</label>
+                        <select name="category" id="category" class="auth-input" style="background: var(--bg-color);" required>
+                            <option value="player">Player Prop</option>
+                            <option value="team">Team Prop</option>
+                        </select>
+                    </div>
+
+                    <div class="auth-form-group">
                         <label for="line_value">Line Value (Threshold)</label>
                         <input type="number" step="0.5" name="line_value" id="line_value" class="auth-input" value="0.5" required>
                         <span style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.2rem;">
@@ -82,12 +108,20 @@
                         </div>
                     </div>
                     <span style="font-size: 0.75rem; color: var(--text-secondary); display: block; margin-top: 0.2rem; margin-bottom: 1rem;">
-                        American Odds format: E.g. -110 (bet $110 to win $100) or 150 (bet $100 to win $150).
+                        American Odds format: E.g. -110 or 150.
                     </span>
 
                     <div class="auth-form-group">
                         <label for="description">Prop Description</label>
                         <input type="text" name="description" id="description" class="auth-input" placeholder="e.g. Stephen Kruse Over 3.5 Three-Pointers" required>
+                    </div>
+
+                    <div class="auth-form-group">
+                        <label for="display_order">Display Order Priority</label>
+                        <input type="number" name="display_order" id="display_order" class="auth-input" value="0" required>
+                        <span style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.2rem;">
+                            Lower numbers sort first. Default is 0.
+                        </span>
                     </div>
 
                     <button type="submit" class="auth-btn-primary" style="margin-top: 0.5rem;">Create Prop Line</button>
@@ -108,16 +142,20 @@
                     {% for prop in active_props %}
                         <div class="admin-prop-row">
                             <div class="admin-prop-details">
-                                <div style="font-size: 0.8rem; color: var(--text-secondary); font-family: var(--font-mono); text-transform: uppercase;">
-                                    vs {{ prop.opponent }} ({{ prop.date }}) | TYPE: {{ prop.prop_type }} | OVER/YES: {% if prop.odds_over > 0 %}+{% endif %}{{ prop.odds_over }} | UNDER/NO: {% if prop.odds_under > 0 %}+{% endif %}{{ prop.odds_under }}
+                                <div style="font-size: 0.78rem; color: var(--text-secondary); font-family: var(--font-mono); text-transform: uppercase;">
+                                    vs {{ prop.opponent }} ({{ prop.date }}) | TYPE: {{ prop.prop_type }} | CAT: {{ prop.category.upper() }} | ORDER: {{ prop.display_order }}
                                 </div>
                                 <div style="font-size: 1rem; font-weight: bold; margin-top: 0.2rem;">
                                     {{ prop.description }}
                                 </div>
+                                <div style="font-size: 0.75rem; color: var(--neon-gold); font-family: var(--font-mono); margin-top: 0.2rem;">
+                                    Over/Yes: {% if prop.odds_over > 0 %}+{% endif %}{{ prop.odds_over }} | Under/No: {% if prop.odds_under > 0 %}+{% endif %}{{ prop.odds_under }}
+                                </div>
                             </div>
-                            <div class="admin-prop-actions">
-                                <form action="{{ url_for('delete_prop', prop_id=prop.id) }}" method="POST" onsubmit="return confirm('Deleting this prop will refund all bets placed on it. Proceed?');">
-                                    <button type="submit" class="btn-delete-prop">Delete</button>
+                            <div class="admin-prop-actions" style="display: flex; gap: 0.5rem; align-items: center;">
+                                <a href="{{ url_for('edit_prop', prop_id=prop.id) }}" class="place-bet-btn" style="padding: 0.35rem 0.8rem; font-size: 0.75rem; text-decoration: none; border-color: var(--neon-gold); color: var(--neon-gold); line-height: 1; text-align: center;">Edit</a>
+                                <form action="{{ url_for('delete_prop', prop_id=prop.id) }}" method="POST" onsubmit="return confirm('Deleting this prop will refund all bets placed on it. Proceed?');" style="margin: 0;">
+                                    <button type="submit" class="btn-delete-prop" style="padding: 0.35rem 0.8rem; font-size: 0.75rem; line-height: 1;">Delete</button>
                                 </form>
                             </div>
                         </div>
@@ -140,7 +178,7 @@
                         <div class="admin-prop-row" style="background: rgba(0,0,0,0.3); border-color: rgba(255,255,255,0.03);">
                             <div class="admin-prop-details">
                                 <div style="font-size: 0.8rem; color: var(--text-secondary); font-family: var(--font-mono);">
-                                    vs {{ prop.opponent }} ({{ prop.date }})
+                                    vs {{ prop.opponent }} ({{ prop.date }}) | CAT: {{ prop.category.upper() }}
                                 </div>
                                 <div style="font-size: 0.95rem; font-weight: 600; margin-top: 0.2rem;">
                                     {{ prop.description }}
@@ -181,7 +219,6 @@
                                         </form>
                                     </div>
                                 {% else %}
-                                    <!-- Prop already graded, show reset/regrade options if needed -->
                                     <span style="font-size: 0.75rem; color: var(--text-secondary);">Graded</span>
                                 {% endif %}
                             </div>
@@ -198,12 +235,15 @@
     function togglePlayerSelect(value) {
         var playerSelect = document.getElementById('player_select_group');
         var lineVal = document.getElementById('line_value');
+        var categorySelect = document.getElementById('category');
         
         // Hide player select for team outcome or custom props
         if (value === 'outcome' || value === 'custom') {
             playerSelect.style.display = 'none';
+            categorySelect.value = 'team'; // Default team category
         } else {
             playerSelect.style.display = 'flex';
+            categorySelect.value = 'player'; // Default player category
         }
 
         // Auto default line value based on type

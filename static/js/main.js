@@ -10,7 +10,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 4. Admin Points Auto-Summing
     initAdminAutoSum();
+
+    // 5. Mobile Navigation Menu Toggle
+    initMobileNavigation();
 });
+
+function initMobileNavigation() {
+    const logoLink = document.querySelector('.logo-link');
+    const navMenu = document.querySelector('.nav-menu');
+    if (!logoLink || !navMenu) return;
+
+    logoLink.addEventListener('click', (e) => {
+        if (window.innerWidth <= 768) {
+            e.preventDefault();
+            navMenu.classList.toggle('show-menu');
+        }
+    });
+}
 
 /* -------------------------------------------------------------
  * 1. FLOATING COWS SYSTEM

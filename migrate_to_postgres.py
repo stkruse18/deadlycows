@@ -23,7 +23,7 @@ def migrate():
     pg_cursor = pg_conn.cursor()
 
     # Drop existing tables to perform a clean schema reset
-    pg_cursor.execute("DROP TABLE IF EXISTS bets, wagers, props, betting_users, stats, games, players CASCADE;")
+    pg_cursor.execute("DROP TABLE IF EXISTS bets, wagers, props, betting_users, stats, games, players, settings CASCADE;")
 
     # 1. Create players
     pg_cursor.execute('''
@@ -95,7 +95,9 @@ def migrate():
             odds_over INTEGER NOT NULL DEFAULT -110,
             odds_under INTEGER NOT NULL DEFAULT -110,
             description VARCHAR(255) NOT NULL,
-            status VARCHAR(50) NOT NULL DEFAULT 'open'
+            status VARCHAR(50) NOT NULL DEFAULT 'open',
+            category VARCHAR(50) NOT NULL DEFAULT 'player',
+            display_order INTEGER NOT NULL DEFAULT 0
         );
     ''')
 
@@ -122,6 +124,21 @@ def migrate():
             odds_at_placed INTEGER NOT NULL,
             status VARCHAR(50) NOT NULL DEFAULT 'pending'
         );
+    ''')
+
+    # 8. Create settings
+    pg_cursor.execute('''
+        CREATE TABLE IF NOT EXISTS settings (
+            key VARCHAR(255) PRIMARY KEY,
+            value VARCHAR(255) NOT NULL
+        );
+    ''')
+    
+    # Initialize settings defaults
+    pg_cursor.execute('''
+        INSERT INTO settings (key, value)
+        VALUES ('betting_paused', 'false')
+        ON CONFLICT (key) DO NOTHING;
     ''')
     
     pg_conn.commit()

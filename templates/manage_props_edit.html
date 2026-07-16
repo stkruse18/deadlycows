@@ -1,0 +1,121 @@
+{% extends 'layout.html' %}
+
+{% block title %}Edit Prop Line (Admin){% endblock %}
+
+{% block content %}
+<div class="betting-container" style="max-width: 600px; margin: 0 auto; padding: 2rem 1rem;">
+    
+    <div style="margin-bottom: 1.5rem;">
+        <a href="{{ url_for('manage_props') }}" class="place-bet-btn" style="text-decoration: none; font-size: 0.8rem; padding: 0.4rem 1rem;">⬅️ Back to bookie controls</a>
+    </div>
+
+    <h1>✏️ Edit Prop Line</h1>
+    <p style="color: var(--text-secondary); margin-bottom: 2rem;">
+        Modify description, category, display priority, lines, or odds for this active prop line.
+    </p>
+
+    <div class="prop-card" style="padding: 2rem;">
+        <form action="{{ url_for('edit_prop', prop_id=prop.id) }}" method="POST" class="bet-form">
+            
+            <div class="auth-form-group">
+                <label for="game_id">Select Game</label>
+                <select name="game_id" id="game_id" class="auth-input" style="background: var(--bg-color);" required>
+                    {% for game in games %}
+                        <option value="{{ game.id }}" {% if prop.game_id == game.id %}selected{% endif %}>
+                            vs {{ game.opponent }} ({{ game.date }})
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="auth-form-group">
+                <label for="prop_type">Prop Type</label>
+                <select name="prop_type" id="prop_type" class="auth-input" style="background: var(--bg-color);" onchange="togglePlayerSelect(this.value)" required>
+                    <option value="outcome" {% if prop.prop_type == 'outcome' %}selected{% endif %}>Team Outcome (Win/Loss)</option>
+                    <option value="points" {% if prop.prop_type == 'points' %}selected{% endif %}>Points</option>
+                    <option value="rebounds" {% if prop.prop_type == 'rebounds' %}selected{% endif %}>Rebounds</option>
+                    <option value="assists" {% if prop.prop_type == 'assists' %}selected{% endif %}>Assists</option>
+                    <option value="three_pt" {% if prop.prop_type == 'three_pt' %}selected{% endif %}>3-Pointers Made</option>
+                    <option value="steals" {% if prop.prop_type == 'steals' %}selected{% endif %}>Steals</option>
+                    <option value="blocks" {% if prop.prop_type == 'blocks' %}selected{% endif %}>Blocks</option>
+                    <option value="turnovers" {% if prop.prop_type == 'turnovers' %}selected{% endif %}>Turnovers</option>
+                    <option value="airballs" {% if prop.prop_type == 'airballs' %}selected{% endif %}>Airballs</option>
+                    <option value="bozo_moments" {% if prop.prop_type == 'bozo_moments' %}selected{% endif %}>Bozo Moments</option>
+                    <option value="rating" {% if prop.prop_type == 'rating' %}selected{% endif %}>Overall Rating</option>
+                    <option value="custom" {% if prop.prop_type == 'custom' %}selected{% endif %}>Custom Prop (Manual Grade)</option>
+                </select>
+            </div>
+
+            <div class="auth-form-group" id="player_select_group" {% if prop.prop_type == 'outcome' or prop.prop_type == 'custom' %}style="display: none;"{% endif %}>
+                <label for="player_id">Select Player</label>
+                <select name="player_id" id="player_id" class="auth-input" style="background: var(--bg-color);">
+                    <option value="None">-- Select Player --</option>
+                    {% for player in players %}
+                        <option value="{{ player.id }}" {% if prop.player_id == player.id %}selected{% endif %}>
+                            {{ player.name }} (#{{ player.jersey_number }})
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="auth-form-group">
+                <label for="category">Prop Category</label>
+                <select name="category" id="category" class="auth-input" style="background: var(--bg-color);" required>
+                    <option value="player" {% if prop.category == 'player' %}selected{% endif %}>Player Prop</option>
+                    <option value="team" {% if prop.category == 'team' %}selected{% endif %}>Team Prop</option>
+                </select>
+            </div>
+
+            <div class="auth-form-group">
+                <label for="line_value">Line Value (Threshold)</label>
+                <input type="number" step="0.5" name="line_value" id="line_value" class="auth-input" value="{{ prop.line_value }}" required>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="auth-form-group">
+                    <label for="odds_over">Over / Yes Odds</label>
+                    <input type="number" name="odds_over" id="odds_over" class="auth-input" value="{{ prop.odds_over }}" required>
+                </div>
+                <div class="auth-form-group">
+                    <label for="odds_under">Under / No Odds</label>
+                    <input type="number" name="odds_under" id="odds_under" class="auth-input" value="{{ prop.odds_under }}" required>
+                </div>
+            </div>
+
+            <div class="auth-form-group">
+                <label for="description">Prop Description</label>
+                <input type="text" name="description" id="description" class="auth-input" value="{{ prop.description }}" required>
+            </div>
+
+            <div class="auth-form-group">
+                <label for="display_order">Display Order Priority</label>
+                <input type="number" name="display_order" id="display_order" class="auth-input" value="{{ prop.display_order }}" required>
+                <span style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.2rem;">
+                    Lower numbers sort first. E.g. -1 displays above 0.
+                </span>
+            </div>
+
+            <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                <a href="{{ url_for('manage_props') }}" class="place-bet-btn" style="text-align: center; text-decoration: none; flex: 1; padding: 0.8rem 0; font-size: 0.95rem; border-color: rgba(255,255,255,0.2); color: var(--text-secondary);">Cancel</a>
+                <button type="submit" class="auth-btn-primary" style="flex: 1; margin: 0; padding: 0.8rem 0; font-size: 0.95rem;">Save Changes</button>
+            </div>
+        </form>
+    </div>
+
+</div>
+
+<script>
+    function togglePlayerSelect(value) {
+        var playerSelect = document.getElementById('player_select_group');
+        var categorySelect = document.getElementById('category');
+        
+        if (value === 'outcome' || value === 'custom') {
+            playerSelect.style.display = 'none';
+            categorySelect.value = 'team';
+        } else {
+            playerSelect.style.display = 'flex';
+            categorySelect.value = 'player';
+        }
+    }
+</script>
+{% endblock %}

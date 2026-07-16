@@ -5,6 +5,7 @@ DROP TABLE IF EXISTS betting_users;
 DROP TABLE IF EXISTS stats;
 DROP TABLE IF EXISTS games;
 DROP TABLE IF EXISTS players;
+DROP TABLE IF EXISTS settings;
 
 
 CREATE TABLE players (
@@ -66,6 +67,8 @@ CREATE TABLE props (
     odds_under INTEGER NOT NULL DEFAULT -110,
     description TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'open',
+    category TEXT NOT NULL DEFAULT 'player',
+    display_order INTEGER NOT NULL DEFAULT 0,
     FOREIGN KEY(game_id) REFERENCES games(id) ON DELETE CASCADE,
     FOREIGN KEY(player_id) REFERENCES players(id) ON DELETE SET NULL
 );
@@ -90,5 +93,10 @@ CREATE TABLE bets (
     status TEXT NOT NULL DEFAULT 'pending',
     FOREIGN KEY(wager_id) REFERENCES wagers(id) ON DELETE CASCADE,
     FOREIGN KEY(prop_id) REFERENCES props(id) ON DELETE CASCADE
+);
+
+CREATE TABLE settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
 );
 

@@ -20,11 +20,12 @@ def is_admin():
 
 @app.context_processor
 def inject_globals():
-    # Make admin status and current betting user available to all templates
+    # Make admin status, current betting user, and betting paused status available to all templates
     betting_user = None
     if session.get('betting_user_id'):
         betting_user = database.get_betting_user(session.get('betting_user_id'))
-    return dict(is_admin=is_admin, current_betting_user=betting_user)
+    paused = database.is_betting_paused()
+    return dict(is_admin=is_admin, current_betting_user=betting_user, betting_paused=paused)
 
 
 @app.route('/')
@@ -323,7 +324,9 @@ def betting():
         user_bets = database.get_user_bets(user_id)
     
     active_props = database.get_active_props()
-    return render_template('betting.html', active_props=active_props, user_bets=user_bets)
+    player_props = [p for p in active_props if p.get('category', 'player') == 'player']
+    team_props = [p for p in active_props if p.get('category', 'player') == 'team']
+    return render_template('betting.html', player_props=player_props, team_props=team_props, user_bets=user_bets)
 
 @app.route('/betting/signup', methods=['GET', 'POST'])
 def betting_signup():
@@ -390,6 +393,9 @@ def place_bets():
     if not user_id:
         return jsonify({"success": False, "message": "You must be logged in to place bets."}), 401
 
+    if database.is_betting_paused():
+        return jsonify({"success": False, "message": "🔒 Betting is currently paused by admin (Live Game In Progress)."}), 400
+
     data = request.get_json() or {}
     is_parlay = data.get('is_parlay', False)
     parlay_wager = data.get('parlay_wager', 0)
@@ -437,6 +443,8 @@ def manage_props():
         odds_over = request.form.get('odds_over')
         odds_under = request.form.get('odds_under')
         description = request.form.get('description', '').strip()
+        category = request.form.get('category', 'player')
+        display_order = request.form.get('display_order', '0')
 
         if not game_id or not prop_type or not line_value or not odds_over or not odds_under or not description:
             flash("All fields are required to create a prop.", "danger")
@@ -450,7 +458,9 @@ def manage_props():
                     line_value=float(line_value),
                     odds_over=int(odds_over),
                     odds_under=int(odds_under),
-                    description=description
+                    description=description,
+                    category=category,
+                    display_order=int(display_order)
                 )
                 flash("Prop created successfully!", "success")
             except ValueError:
@@ -494,6 +504,66 @@ def grade_prop(prop_id):
         database.grade_prop(prop_id, outcome)
         flash(f"Prop graded successfully as '{outcome.upper()}'!", "success")
 
+    return redirect(url_for('manage_props'))
+
+@app.route('/manage/props/edit/<int:prop_id>', methods=['GET', 'POST'])
+def edit_prop(prop_id):
+    if not is_admin():
+        flash("Unauthorized pasture access!", "danger")
+        return redirect(url_for('manage'))
+
+    prop = database.get_prop(prop_id)
+    if not prop:
+        flash("Prop not found.", "danger")
+        return redirect(url_for('manage_props'))
+
+    if request.method == 'POST':
+        game_id = request.form.get('game_id')
+        prop_type = request.form.get('prop_type')
+        player_id = request.form.get('player_id')
+        line_value = request.form.get('line_value')
+        odds_over = request.form.get('odds_over')
+        odds_under = request.form.get('odds_under')
+        description = request.form.get('description', '').strip()
+        category = request.form.get('category', 'player')
+        display_order = request.form.get('display_order', '0')
+
+        if not game_id or not prop_type or not line_value or not odds_over or not odds_under or not description:
+            flash("All fields are required to update the prop.", "danger")
+        else:
+            try:
+                p_id = int(player_id) if player_id and player_id != 'None' else None
+                database.update_prop(
+                    prop_id=prop_id,
+                    game_id=int(game_id),
+                    prop_type=prop_type,
+                    player_id=p_id,
+                    line_value=float(line_value),
+                    odds_over=int(odds_over),
+                    odds_under=int(odds_under),
+                    description=description,
+                    category=category,
+                    display_order=int(display_order)
+                )
+                flash("Prop updated successfully!", "success")
+                return redirect(url_for('manage_props'))
+            except ValueError:
+                flash("Error parsing numeric values.", "danger")
+
+    games = database.get_all_games()
+    players = database.get_all_players()
+    return render_template('manage_props_edit.html', prop=prop, games=games, players=players)
+
+@app.route('/manage/betting/toggle-pause', methods=['POST'])
+def toggle_betting_pause():
+    if not is_admin():
+        flash("Unauthorized pasture access!", "danger")
+        return redirect(url_for('manage'))
+
+    current_state = database.is_betting_paused()
+    database.set_betting_paused(not current_state)
+    new_state = "PAUSED" if not current_state else "RESUMED"
+    flash(f"Betting has been successfully {new_state}!", "success")
     return redirect(url_for('manage_props'))
 
 if __name__ == '__main__':
