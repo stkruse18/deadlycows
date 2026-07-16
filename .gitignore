@@ -11,5 +11,6 @@ __pycache__/
 # Ignore macOS system files
 .DS_Store
 
-# Do NOT ignore deadlycows.db (we want this database tracked in Git)
-!deadlycows.db
+# Ignore SQLite database
+deadlycows.db
+

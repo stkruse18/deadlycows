@@ -1,0 +1,226 @@
+{% extends 'layout.html' %}
+
+{% block title %}Cow Book Betting{% endblock %}
+
+{% block content %}
+<div class="betting-container">
+    
+    <!-- Betting Sub-navigation -->
+    <div class="betting-nav-header">
+        <a href="{{ url_for('betting') }}" class="betting-nav-link active">🎯 Odds Board</a>
+        <a href="{{ url_for('betting_leaderboard') }}" class="betting-nav-link">🏆 Leaderboard</a>
+        {% if is_admin() %}
+            <a href="{{ url_for('manage_props') }}" class="betting-nav-link" style="color: var(--neon-gold); border-bottom-color: transparent;">⚙️ Manage Props (Admin)</a>
+        {% endif %}
+    </div>
+
+    <div class="betting-header">
+        <h1>🐮 The Cow Book</h1>
+        {% if current_betting_user %}
+            <div class="user-info-large">
+                <span class="user-badge" style="font-size: 1.1rem; padding: 0.6rem 1.2rem;">
+                    Balance: <strong>${{ current_betting_user.balance }}</strong>
+                </span>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Main Grid -->
+    <div class="betting-grid">
+        
+        <!-- Left: Open Props -->
+        <div class="props-board">
+            <h2>Open Props</h2>
+            
+            {% if not active_props %}
+                <div class="empty-state">
+                    <p>🌾 No active props at the moment. Check back closer to game day!</p>
+                </div>
+            {% else %}
+                <div class="props-list">
+                    {% for prop in active_props %}
+                        <div class="prop-card">
+                            <div class="prop-header">
+                                <span class="prop-game-info">
+                                    vs {{ prop.opponent }} | {{ prop.date }}
+                                </span>
+                            </div>
+                            <div class="prop-desc">
+                                {{ prop.description }}
+                            </div>
+                            
+                            <div class="bet-options-row" style="margin-top: 1rem;">
+                                {% if prop.prop_type == 'outcome' or prop.prop_type == 'custom' %}
+                                    <div class="selection-btn-container" style="flex: 1;">
+                                        <button type="button" 
+                                                id="btn-{{ prop.id }}-yes" 
+                                                class="selection-label-btn" 
+                                                style="width: 100%;" 
+                                                {% if current_betting_user %}
+                                                    onclick="toggleSelection('{{ prop.id }}', '{{ prop.description }}', 'yes', '{{ prop.odds_over }}', '{{ prop.line_value }}')"
+                                                {% else %}
+                                                    onclick="window.location.href='{{ url_for('betting_login') }}'"
+                                                {% endif %}>
+                                            Yes ({% if prop.odds_over > 0 %}+{% endif %}{{ prop.odds_over }})
+                                        </button>
+                                    </div>
+                                    <div class="selection-btn-container" style="flex: 1;">
+                                        <button type="button" 
+                                                id="btn-{{ prop.id }}-no" 
+                                                class="selection-label-btn" 
+                                                style="width: 100%;" 
+                                                {% if current_betting_user %}
+                                                    onclick="toggleSelection('{{ prop.id }}', '{{ prop.description }}', 'no', '{{ prop.odds_under }}', '{{ prop.line_value }}')"
+                                                {% else %}
+                                                    onclick="window.location.href='{{ url_for('betting_login') }}'"
+                                                {% endif %}>
+                                            No ({% if prop.odds_under > 0 %}+{% endif %}{{ prop.odds_under }})
+                                        </button>
+                                    </div>
+                                {% else %}
+                                    <div class="selection-btn-container" style="flex: 1;">
+                                        <button type="button" 
+                                                id="btn-{{ prop.id }}-over" 
+                                                class="selection-label-btn" 
+                                                style="width: 100%;" 
+                                                {% if current_betting_user %}
+                                                    onclick="toggleSelection('{{ prop.id }}', '{{ prop.description }}', 'over', '{{ prop.odds_over }}', '{{ prop.line_value }}')"
+                                                {% else %}
+                                                    onclick="window.location.href='{{ url_for('betting_login') }}'"
+                                                {% endif %}>
+                                            Over {{ prop.line_value }} ({% if prop.odds_over > 0 %}+{% endif %}{{ prop.odds_over }})
+                                        </button>
+                                    </div>
+                                    <div class="selection-btn-container" style="flex: 1;">
+                                        <button type="button" 
+                                                id="btn-{{ prop.id }}-under" 
+                                                class="selection-label-btn" 
+                                                style="width: 100%;" 
+                                                {% if current_betting_user %}
+                                                    onclick="toggleSelection('{{ prop.id }}', '{{ prop.description }}', 'under', '{{ prop.odds_under }}', '{{ prop.line_value }}')"
+                                                {% else %}
+                                                    onclick="window.location.href='{{ url_for('betting_login') }}'"
+                                                {% endif %}>
+                                            Under {{ prop.line_value }} ({% if prop.odds_under > 0 %}+{% endif %}{{ prop.odds_under }})
+                                        </button>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Right Sidebar: Betslip & User History -->
+        <div class="bets-board">
+            {% if current_betting_user %}
+                <!-- Interactive Betslip Container -->
+                <h2 style="font-family: var(--font-header); text-transform: uppercase; font-size: 1.2rem; margin-bottom: 1rem; color: var(--text-primary);">🎫 Betslip</h2>
+                <div id="betslip-container" style="margin-bottom: 1rem;">
+                    <!-- Managed Dynamically by betslip.js -->
+                </div>
+                
+                <div id="betslip-actions-section" style="display: none; margin-bottom: 2rem;">
+                    <div id="betslip-error-msg" style="color: var(--neon-red); text-shadow: 0 0 5px var(--neon-red-glow); font-size: 0.8rem; margin-bottom: 0.8rem; display: none; font-family: var(--font-mono);"></div>
+                    <div style="display: flex; gap: 0.8rem;">
+                        <button type="button" id="betslip-clear-btn" class="btn btn-secondary" onclick="clearBetslip()" style="flex: 1; font-size: 0.8rem; padding: 0.5rem 0; font-family: var(--font-mono);">Clear</button>
+                        <button type="button" id="betslip-submit-btn" class="btn btn-primary" onclick="submitBetslip()" style="flex: 2; font-size: 0.8rem; padding: 0.5rem 0; font-family: var(--font-header); letter-spacing: 1px; text-transform: uppercase;">Submit Wagers</button>
+                    </div>
+                </div>
+
+                <!-- Your Bets (History) -->
+                <h2 style="font-family: var(--font-header); text-transform: uppercase; font-size: 1.2rem; margin-top: 2rem; margin-bottom: 1rem; color: var(--text-primary); border-top: 1px solid rgba(255,255,255,0.05); padding-top: 1.5rem;">📊 Your Bets</h2>
+                {% if not user_bets %}
+                    <div class="empty-state" style="padding: 1.5rem; margin-bottom: 2rem;">
+                        <p>No bets placed yet. Pick a prop and back your Cows!</p>
+                    </div>
+                {% else %}
+                    <div class="bets-list" style="display: flex; flex-direction: column; gap: 1.2rem; max-height: 500px; overflow-y: auto; padding-right: 0.5rem;">
+                        {% for wager in user_bets %}
+                            <div class="prop-card" style="padding: 1.2rem; border-color: {% if wager.legs | length > 1 %}rgba(157, 0, 255, 0.25){% else %}rgba(255,255,255,0.05){% endif %}; background: {% if wager.legs | length > 1 %}rgba(157, 0, 255, 0.03){% else %}rgba(0,0,0,0.2){% endif %};">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; font-size: 0.75rem;">
+                                    <span class="badge-status badge-{{ wager.status }}" style="font-weight: 700; text-transform: uppercase;">
+                                        {{ wager.status }}
+                                    </span>
+                                    <span style="color: var(--text-secondary); font-family: var(--font-mono); font-weight: bold;">
+                                        Wager: ${{ wager.wager_amount }} ({% if wager.odds_at_placed > 0 %}+{% endif %}{{ wager.odds_at_placed }})
+                                    </span>
+                                </div>
+                                
+                                {% if wager.legs | length > 1 %}
+                                    <div style="font-size: 0.75rem; font-family: var(--font-mono); font-weight: bold; color: rgb(180, 78, 255); text-shadow: 0 0 5px rgba(157, 0, 255, 0.3); text-transform: uppercase; margin-bottom: 0.6rem; letter-spacing: 0.5px;">
+                                        🔗 Parlay ({{ wager.legs | length }} Legs)
+                                    </div>
+                                {% endif %}
+
+                                <div style="display: flex; flex-direction: column; gap: 0.6rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 0.6rem;">
+                                    {% for leg in wager.legs %}
+                                        <div style="font-size: 0.85rem; line-height: 1.4;">
+                                            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem;">
+                                                <span style="color: var(--text-primary); font-weight: 600;">
+                                                    {% if leg.selection == 'over' %}Over {{ leg.line_value }}
+                                                    {% elif leg.selection == 'under' %}Under {{ leg.line_value }}
+                                                    {% elif leg.selection == 'yes' %}Yes / Win
+                                                    {% else %}No / Loss{% endif %}
+                                                    <span style="font-size: 0.75rem; color: var(--text-secondary); font-family: var(--font-mono);">({% if leg.odds_at_placed > 0 %}+{% endif %}{{ leg.odds_at_placed }})</span>
+                                                </span>
+                                                <span class="badge-status badge-{{ leg.status }}" style="font-size: 0.65rem; padding: 0.1rem 0.4rem; min-width: auto; height: auto; text-transform: uppercase;">
+                                                    {{ leg.status }}
+                                                </span>
+                                            </div>
+                                            <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.1rem;">
+                                                {{ leg.description }}
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+
+                                <div style="display: flex; justify-content: flex-end; align-items: center; font-size: 0.85rem; margin-top: 0.8rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 0.6rem; color: var(--text-secondary);">
+                                    <span>
+                                        {% if wager.status == 'won' %}
+                                            Payout: <strong style="color: var(--neon-green); font-family: var(--font-mono); font-size: 0.95rem;">+${{ wager.payout }}</strong>
+                                        {% elif wager.status == 'push' %}
+                                            Refund: <strong style="color: var(--text-primary); font-family: var(--font-mono); font-size: 0.95rem;">${{ wager.payout }}</strong>
+                                        {% elif wager.status == 'lost' %}
+                                            Loss: <strong style="color: var(--neon-red); font-family: var(--font-mono); font-size: 0.95rem;">-${{ wager.wager_amount }}</strong>
+                                        {% else %}
+                                            To Win: <strong style="color: var(--neon-gold); font-family: var(--font-mono);">
+                                                {% if wager.odds_at_placed > 0 %}
+                                                    ${{ ((wager.wager_amount * wager.odds_at_placed / 100) + wager.wager_amount)|int }}
+                                                {% else %}
+                                                    ${{ ((wager.wager_amount * 100 / wager.odds_at_placed|abs) + wager.wager_amount)|int }}
+                                                {% endif %}
+                                            </strong>
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% else %}
+                <h2>Cow Book Rules</h2>
+                <div class="prop-card" style="line-height: 1.7; font-size: 0.95rem; padding: 1.5rem;">
+                    <p style="margin-bottom: 1rem;">🐮 <strong>Welcome to the Deadly Cows Sportsbook!</strong></p>
+                    <ul style="padding-left: 1.2rem; margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 0.6rem;">
+                        <li>Every new account gets <strong>$100,000 starting cash</strong>.</li>
+                        <li>Bet on team outcomes, player stat lines, or custom props.</li>
+                        <li>Stats-based props grade <strong>automatically</strong> when game box scores are logged.</li>
+                        <li>Compete with other Cows fans on the leaderboards.</li>
+                    </ul>
+                    <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                        <a href="{{ url_for('betting_signup') }}" class="place-bet-btn" style="text-align: center; text-decoration: none; flex: 1; padding: 0.8rem 0; font-size: 0.9rem; background: var(--neon-gold); color: var(--bg-color) !important;">Sign Up</a>
+                        <a href="{{ url_for('betting_login') }}" class="place-bet-btn" style="text-align: center; text-decoration: none; flex: 1; padding: 0.8rem 0; font-size: 0.9rem;">Log In</a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/betslip.js') }}"></script>
+{% endblock %}

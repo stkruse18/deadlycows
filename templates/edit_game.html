@@ -38,9 +38,10 @@
         <div class="form-row">
             <div class="form-group">
                 <label for="outcome">Outcome</label>
-                <select id="outcome" name="outcome" class="form-control" required>
+                <select id="outcome" name="outcome" class="form-control" onchange="checkOutcome(this.value)" required>
                     <option value="W" {% if game and game.outcome.upper() == 'W' %}selected{% endif %}>UDDER VICTORY (W)</option>
                     <option value="L" {% if game and game.outcome.upper() == 'L' %}selected{% endif %}>UDDER FAILURE (L)</option>
+                    <option value="P" {% if game and game.outcome.upper() == 'P' %}selected{% endif %}>UPCOMING / PENDING (P)</option>
                 </select>
             </div>
             <div class="form-group">
@@ -49,7 +50,9 @@
             </div>
         </div>
 
-        <!-- Box Score Spreadsheet Entry -->
+        <div id="box-score-section">
+            <!-- Box Score Spreadsheet Entry -->
+
         <h3 style="font-family: var(--font-mono); font-size: 0.95rem; text-transform: uppercase; color: var(--neon-green); margin-top: 2.5rem; margin-bottom: 1rem; border-bottom: 1px solid rgba(57, 255, 20, 0.2); padding-bottom: 0.5rem;">
             📊 Player Box Score (Check "Played?" to include player in game)
         </h3>
@@ -147,6 +150,8 @@
             </p>
         {% endif %}
 
+        </div> <!-- End of box score section wrapper -->
+
         <!-- Form Actions -->
         <div style="margin-top: 3rem; display: flex; gap: 1.2rem;">
             <button type="submit" class="btn btn-primary">Save Game & Box Score</button>
@@ -154,4 +159,37 @@
         </div>
     </form>
 </div>
+
+<script>
+    function checkOutcome(value) {
+        var boxScoreSec = document.getElementById('box-score-section');
+        var oppScoreInput = document.getElementById('opponent_score');
+        var cowsScoreInput = document.getElementById('cows_score');
+        
+        if (value === 'P') {
+            boxScoreSec.style.display = 'none';
+            oppScoreInput.value = '0';
+            oppScoreInput.readOnly = true;
+            oppScoreInput.style.background = 'rgba(255, 106, 0, 0.05)';
+            oppScoreInput.style.borderColor = 'var(--border-color)';
+            cowsScoreInput.value = '0';
+            
+            // Uncheck all player played checkboxes
+            var checkboxes = document.querySelectorAll('.player-played-checkbox');
+            checkboxes.forEach(function(cb) {
+                cb.checked = false;
+            });
+        } else {
+            boxScoreSec.style.display = 'block';
+            oppScoreInput.readOnly = false;
+            oppScoreInput.style.background = '';
+            oppScoreInput.style.borderColor = '';
+        }
+    }
+    
+    // Run on load
+    document.addEventListener("DOMContentLoaded", function() {
+        checkOutcome(document.getElementById('outcome').value);
+    });
+</script>
 {% endblock %}

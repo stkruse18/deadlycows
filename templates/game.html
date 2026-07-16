@@ -9,13 +9,23 @@
         <div class="game-header-meta">GAME DAY REPORT &bull; {{ game.location }}</div>
         <h1 class="game-header-opponent">Deadly Cows vs {{ game.opponent }}</h1>
         <div class="game-header-score">
-            <span class="{{ 'score-win' if game.outcome.upper() == 'W' else 'score-loss' }}">
-                {{ game.cows_score }} - {{ game.opponent_score }}
-            </span>
+            {% if game.outcome.upper() == 'P' %}
+                <span style="color: var(--text-secondary);">TBD</span>
+            {% else %}
+                <span class="{{ 'score-win' if game.outcome.upper() == 'W' else 'score-loss' }}">
+                    {{ game.cows_score }} - {{ game.opponent_score }}
+                </span>
+            {% endif %}
         </div>
-        <div class="game-card-outcome outcome-{{ game.outcome | lower }}" style="display: inline-block; font-size: 1rem; padding: 0.5rem 1.5rem;">
-            {{ 'UDDER VICTORY (WIN)' if game.outcome.upper() == 'W' else 'CURDLED FAILURE (LOSS)' }}
-        </div>
+        {% if game.outcome.upper() == 'P' %}
+            <div class="game-card-outcome outcome-p" style="display: inline-block; font-size: 1rem; padding: 0.5rem 1.5rem; color: var(--neon-gold); border-color: var(--neon-gold); text-shadow: 0 0 5px var(--neon-gold-glow);">
+                UPCOMING MATCH
+            </div>
+        {% else %}
+            <div class="game-card-outcome outcome-{{ game.outcome | lower }}" style="display: inline-block; font-size: 1rem; padding: 0.5rem 1.5rem;">
+                {{ 'UDDER VICTORY (WIN)' if game.outcome.upper() == 'W' else 'CURDLED FAILURE (LOSS)' }}
+            </div>
+        {% endif %}
         <div style="margin-top: 1rem; font-family: var(--font-mono); color: var(--text-secondary);">
             Logged on: {{ game.date }}
         </div>

@@ -1,0 +1,56 @@
+{% extends 'layout.html' %}
+
+{% block title %}
+    {% if action == 'signup' %}Join the Book{% else %}Log In to the Book{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        {% if action == 'signup' %}
+            <h2>Create Nickname</h2>
+            <div class="auth-subtitle">Get $100,000 starting cash and place your bets!</div>
+            
+            <form action="{{ url_for('betting_signup') }}" method="POST" novalidate>
+                <div class="auth-form-group">
+                    <label for="nickname">Nickname / Alias</label>
+                    <input type="text" name="nickname" id="nickname" class="auth-input" placeholder="e.g. GrassFeeder45" maxlength="20" required autofocus>
+                </div>
+                
+                <div class="auth-form-group">
+                    <label for="pin">4-Digit PIN</label>
+                    <input type="password" name="pin" id="pin" class="auth-input" placeholder="e.g. 1234" pattern="[0-9]{4}" inputmode="numeric" maxlength="4" required>
+                    <span style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.2rem;">PIN is used to secure your name and bets. 4 digits only.</span>
+                </div>
+                
+                <button type="submit" class="auth-btn-primary">Register & Start Betting</button>
+            </form>
+            
+            <div class="auth-switch">
+                Already have an account? <a href="{{ url_for('betting_login') }}">Log In</a>
+            </div>
+        {% else %}
+            <h2>Barn Credentials</h2>
+            <div class="auth-subtitle">Log in to manage your bet slip and balances</div>
+            
+            <form action="{{ url_for('betting_login') }}" method="POST" novalidate>
+                <div class="auth-form-group">
+                    <label for="nickname">Nickname / Alias</label>
+                    <input type="text" name="nickname" id="nickname" class="auth-input" placeholder="Your registered name" required autofocus>
+                </div>
+                
+                <div class="auth-form-group">
+                    <label for="pin">4-Digit PIN</label>
+                    <input type="password" name="pin" id="pin" class="auth-input" placeholder="PIN" pattern="[0-9]{4}" inputmode="numeric" maxlength="4" required>
+                </div>
+                
+                <button type="submit" class="auth-btn-primary">Log In</button>
+            </form>
+            
+            <div class="auth-switch">
+                New to the pasture? <a href="{{ url_for('betting_signup') }}">Register Here</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

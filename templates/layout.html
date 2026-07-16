@@ -35,6 +35,9 @@
                 <li class="nav-item {% if request.path == '/totals' %}active{% endif %}">
                     <a href="{{ url_for('totals') }}">Meat Locker (Totals)</a>
                 </li>
+                <li class="nav-item {% if request.path.startswith('/betting') %}active{% endif %}">
+                    <a href="{{ url_for('betting') }}">Cow Book (Betting)</a>
+                </li>
                 <li class="nav-item {% if request.path.startswith('/manage') %}active{% endif %}">
                     {% if is_admin() %}
                         <a href="{{ url_for('manage') }}">Cattle Control (Admin)</a>
@@ -42,6 +45,12 @@
                         <a href="{{ url_for('manage') }}">Gate Entrance</a>
                     {% endif %}
                 </li>
+                {% if current_betting_user %}
+                    <li class="nav-item-user">
+                        <span class="user-badge">🐮 {{ current_betting_user.nickname }}: <strong>${{ current_betting_user.balance }}</strong></span>
+                        <a href="{{ url_for('betting_logout') }}" class="logout-mini-link">Log out</a>
+                    </li>
+                {% endif %}
             </ul>
         </div>
     </header>
@@ -77,5 +86,6 @@
 
     <!-- JavaScript Bundle -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
 </body>
 </html>

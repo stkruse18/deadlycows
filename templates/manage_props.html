@@ -1,0 +1,225 @@
+{% extends 'layout.html' %}
+
+{% block title %}Manage Props (Admin){% endblock %}
+
+{% block content %}
+<div class="betting-container">
+    
+    <!-- Betting Sub-navigation -->
+    <div class="betting-nav-header">
+        <a href="{{ url_for('betting') }}" class="betting-nav-link">🎯 Odds Board</a>
+        <a href="{{ url_for('betting_leaderboard') }}" class="betting-nav-link">🏆 Leaderboard</a>
+        <a href="{{ url_for('manage_props') }}" class="betting-nav-link active" style="color: var(--neon-gold); border-bottom-color: var(--neon-gold);">⚙️ Manage Props (Admin)</a>
+    </div>
+
+    <h1>⚙️ Barn Bookie Controls</h1>
+    <p style="color: var(--text-secondary); margin-bottom: 2rem;">
+        Log props for upcoming games, delete active props (which refunds users), and manually grade custom props.
+    </p>
+
+    <!-- Admin Props Grid -->
+    <div class="admin-props-grid">
+        
+        <!-- Left Column: Create Prop Form -->
+        <div class="props-board">
+            <h2>Add New Prop Line</h2>
+            <div class="prop-card" style="padding: 1.5rem;">
+                <form action="{{ url_for('manage_props') }}" method="POST" class="bet-form">
+                    
+                    <div class="auth-form-group">
+                        <label for="game_id">Select Game</label>
+                        <select name="game_id" id="game_id" class="auth-input" style="background: var(--bg-color);" required>
+                            {% for game in games %}
+                                <option value="{{ game.id }}">vs {{ game.opponent }} ({{ game.date }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="auth-form-group">
+                        <label for="prop_type">Prop Type</label>
+                        <select name="prop_type" id="prop_type" class="auth-input" style="background: var(--bg-color);" onchange="togglePlayerSelect(this.value)" required>
+                            <option value="outcome">Team Outcome (Win/Loss)</option>
+                            <option value="points">Points</option>
+                            <option value="rebounds">Rebounds</option>
+                            <option value="assists">Assists</option>
+                            <option value="three_pt">3-Pointers Made</option>
+                            <option value="steals">Steals</option>
+                            <option value="blocks">Blocks</option>
+                            <option value="turnovers">Turnovers</option>
+                            <option value="airballs">Airballs</option>
+                            <option value="bozo_moments">Bozo Moments</option>
+                            <option value="rating">Overall Rating</option>
+                            <option value="custom">Custom Prop (Manual Grade)</option>
+                        </select>
+                    </div>
+
+                    <div class="auth-form-group" id="player_select_group" style="display: none;">
+                        <label for="player_id">Select Player</label>
+                        <select name="player_id" id="player_id" class="auth-input" style="background: var(--bg-color);">
+                            <option value="None">-- Select Player --</option>
+                            {% for player in players %}
+                                <option value="{{ player.id }}">{{ player.name }} (#{{ player.jersey_number }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="auth-form-group">
+                        <label for="line_value">Line Value (Threshold)</label>
+                        <input type="number" step="0.5" name="line_value" id="line_value" class="auth-input" value="0.5" required>
+                        <span style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.2rem;">
+                            For outcomes, use 0.5. For points, use values like 15.5.
+                        </span>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="auth-form-group">
+                            <label for="odds_over">Over / Yes Odds</label>
+                            <input type="number" name="odds_over" id="odds_over" class="auth-input" value="-110" required>
+                        </div>
+                        <div class="auth-form-group">
+                            <label for="odds_under">Under / No Odds</label>
+                            <input type="number" name="odds_under" id="odds_under" class="auth-input" value="-110" required>
+                        </div>
+                    </div>
+                    <span style="font-size: 0.75rem; color: var(--text-secondary); display: block; margin-top: 0.2rem; margin-bottom: 1rem;">
+                        American Odds format: E.g. -110 (bet $110 to win $100) or 150 (bet $100 to win $150).
+                    </span>
+
+                    <div class="auth-form-group">
+                        <label for="description">Prop Description</label>
+                        <input type="text" name="description" id="description" class="auth-input" placeholder="e.g. Stephen Kruse Over 3.5 Three-Pointers" required>
+                    </div>
+
+                    <button type="submit" class="auth-btn-primary" style="margin-top: 0.5rem;">Create Prop Line</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Right Column: Prop Listings & Grading -->
+        <div class="bets-board">
+            <h2>Active/Open Props</h2>
+            
+            {% if not active_props %}
+                <div class="empty-state" style="margin-bottom: 2rem;">
+                    <p>No open props currently. Add some on the left panel!</p>
+                </div>
+            {% else %}
+                <div class="admin-prop-card-list" style="margin-bottom: 2rem;">
+                    {% for prop in active_props %}
+                        <div class="admin-prop-row">
+                            <div class="admin-prop-details">
+                                <div style="font-size: 0.8rem; color: var(--text-secondary); font-family: var(--font-mono); text-transform: uppercase;">
+                                    vs {{ prop.opponent }} ({{ prop.date }}) | TYPE: {{ prop.prop_type }} | OVER/YES: {% if prop.odds_over > 0 %}+{% endif %}{{ prop.odds_over }} | UNDER/NO: {% if prop.odds_under > 0 %}+{% endif %}{{ prop.odds_under }}
+                                </div>
+                                <div style="font-size: 1rem; font-weight: bold; margin-top: 0.2rem;">
+                                    {{ prop.description }}
+                                </div>
+                            </div>
+                            <div class="admin-prop-actions">
+                                <form action="{{ url_for('delete_prop', prop_id=prop.id) }}" method="POST" onsubmit="return confirm('Deleting this prop will refund all bets placed on it. Proceed?');">
+                                    <button type="submit" class="btn-delete-prop">Delete</button>
+                                </form>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <h2>Recent / Manual Grading Props</h2>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">
+                Standard stats-based props grade themselves when you log a game. Custom or outcome props can be graded below.
+            </p>
+
+            {% if not all_props %}
+                <div class="empty-state">
+                    <p>No props logged for recent games.</p>
+                </div>
+            {% else %}
+                <div class="admin-prop-card-list">
+                    {% for prop in all_props %}
+                        <div class="admin-prop-row" style="background: rgba(0,0,0,0.3); border-color: rgba(255,255,255,0.03);">
+                            <div class="admin-prop-details">
+                                <div style="font-size: 0.8rem; color: var(--text-secondary); font-family: var(--font-mono);">
+                                    vs {{ prop.opponent }} ({{ prop.date }})
+                                </div>
+                                <div style="font-size: 0.95rem; font-weight: 600; margin-top: 0.2rem;">
+                                    {{ prop.description }}
+                                </div>
+                                <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.3rem;">
+                                    Status: 
+                                    <span class="badge-status badge-{% if prop.status.startswith('graded_') %}{{ prop.status.replace('graded_', '') }}{% else %}{{ prop.status }}{% endif %}">
+                                        {{ prop.status.replace('graded_', '').upper() }}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div class="admin-prop-actions" style="flex-direction: column; gap: 0.3rem; align-items: flex-end;">
+                                {% if prop.status == 'open' %}
+                                    <div style="display: flex; gap: 0.3rem;">
+                                        {% if prop.prop_type == 'outcome' or prop.prop_type == 'custom' %}
+                                            <form action="{{ url_for('grade_prop', prop_id=prop.id) }}" method="POST" style="display:inline;">
+                                                <input type="hidden" name="outcome" value="yes">
+                                                <button type="submit" class="btn-grade-mini btn-grade-won">Yes</button>
+                                            </form>
+                                            <form action="{{ url_for('grade_prop', prop_id=prop.id) }}" method="POST" style="display:inline;">
+                                                <input type="hidden" name="outcome" value="no">
+                                                <button type="submit" class="btn-grade-mini btn-grade-lost">No</button>
+                                            </form>
+                                        {% else %}
+                                            <form action="{{ url_for('grade_prop', prop_id=prop.id) }}" method="POST" style="display:inline;">
+                                                <input type="hidden" name="outcome" value="over">
+                                                <button type="submit" class="btn-grade-mini btn-grade-won">Over</button>
+                                            </form>
+                                            <form action="{{ url_for('grade_prop', prop_id=prop.id) }}" method="POST" style="display:inline;">
+                                                <input type="hidden" name="outcome" value="under">
+                                                <button type="submit" class="btn-grade-mini btn-grade-lost">Under</button>
+                                            </form>
+                                        {% endif %}
+                                        <form action="{{ url_for('grade_prop', prop_id=prop.id) }}" method="POST" style="display:inline;">
+                                            <input type="hidden" name="outcome" value="push">
+                                            <button type="submit" class="btn-grade-mini btn-grade-push">Push</button>
+                                        </form>
+                                    </div>
+                                {% else %}
+                                    <!-- Prop already graded, show reset/regrade options if needed -->
+                                    <span style="font-size: 0.75rem; color: var(--text-secondary);">Graded</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+
+    </div>
+</div>
+
+<script>
+    function togglePlayerSelect(value) {
+        var playerSelect = document.getElementById('player_select_group');
+        var lineVal = document.getElementById('line_value');
+        
+        // Hide player select for team outcome or custom props
+        if (value === 'outcome' || value === 'custom') {
+            playerSelect.style.display = 'none';
+        } else {
+            playerSelect.style.display = 'flex';
+        }
+
+        // Auto default line value based on type
+        if (value === 'outcome' || value === 'custom') {
+            lineVal.value = "0.5";
+        } else if (value === 'three_pt' || value === 'steals' || value === 'blocks' || value === 'bozo_moments') {
+            lineVal.value = "2.5";
+        } else if (value === 'points') {
+            lineVal.value = "15.5";
+        } else if (value === 'rebounds') {
+            lineVal.value = "5.5";
+        } else if (value === 'assists') {
+            lineVal.value = "3.5";
+        } else if (value === 'rating') {
+            lineVal.value = "80.5";
+        }
+    }
+</script>
+{% endblock %}

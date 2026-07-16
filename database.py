@@ -1,21 +1,111 @@
 import sqlite3
 import os
+import psycopg2
+from psycopg2.extras import RealDictCursor
+from werkzeug.security import generate_password_hash, check_password_hash
 
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'deadlycows.db')
+DATABASE_URL = os.environ.get('DATABASE_URL')
+import decimal
+
+def convert_value(val):
+    if isinstance(val, decimal.Decimal):
+        return float(val)
+    return val
+
+class PostgresRowWrapper(dict):
+    def __init__(self, raw_dict):
+        converted = {k: convert_value(v) for k, v in raw_dict.items()}
+        super().__init__(converted)
+        self._values = list(converted.values())
+
+    def __getitem__(self, key):
+        if isinstance(key, int):
+            return self._values[key]
+        return super().__getitem__(key)
+
+class PostgresCursorWrapper:
+    def __init__(self, raw_cursor):
+        self.raw_cursor = raw_cursor
+        self.lastrowid = None
+
+    def execute(self, sql, params=()):
+        sql = sql.replace('?', '%s')
+        # Check if INSERT statement and might need returning row ID
+        is_insert = sql.strip().upper().startswith("INSERT INTO")
+        needs_returning = is_insert and ("games" in sql or "players" in sql or "stats" in sql or "betting_users" in sql or "props" in sql or "bets" in sql or "wagers" in sql)
+        
+        if needs_returning and "RETURNING" not in sql.upper():
+            sql += " RETURNING id"
+            self.raw_cursor.execute(sql, params)
+            res = self.raw_cursor.fetchone()
+            if res:
+                self.lastrowid = res.get('id') or list(res.values())[0]
+        else:
+            self.raw_cursor.execute(sql, params)
+
+    def executemany(self, sql, seq_of_parameters):
+        sql = sql.replace('?', '%s')
+        self.raw_cursor.executemany(sql, seq_of_parameters)
+
+    def fetchone(self):
+        row = self.raw_cursor.fetchone()
+        if row is None:
+            return None
+        return PostgresRowWrapper(row)
+
+    def fetchall(self):
+        rows = self.raw_cursor.fetchall()
+        return [PostgresRowWrapper(r) for r in rows]
+
+    def close(self):
+        self.raw_cursor.close()
+
+class PostgresConnectionWrapper:
+    def __init__(self, raw_conn):
+        self.raw_conn = raw_conn
+
+    def cursor(self):
+        return PostgresCursorWrapper(self.raw_conn.cursor())
+
+    def execute(self, sql, params=()):
+        cursor = self.cursor()
+        cursor.execute(sql, params)
+        return cursor
+
+    def commit(self):
+
+        self.raw_conn.commit()
+
+    def rollback(self):
+        self.raw_conn.rollback()
+
+    def close(self):
+        self.raw_conn.close()
 
 def get_db_connection():
-    conn = sqlite3.connect(DB_PATH)
-    conn.execute("PRAGMA foreign_keys = ON;")
-    conn.row_factory = sqlite3.Row
-    return conn
+    if DATABASE_URL:
+        # Use Postgres in production / cloud environment
+        raw_conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
+        return PostgresConnectionWrapper(raw_conn)
+    else:
+        # Fallback to local SQLite file
+        conn = sqlite3.connect(DB_PATH)
+        conn.execute("PRAGMA foreign_keys = ON;")
+        conn.row_factory = sqlite3.Row
+        return conn
 
 def init_db():
+    if DATABASE_URL:
+        # Do not run sqlite3 scripts directly on Postgres
+        return
     conn = get_db_connection()
     schema_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'schema.sql')
     with open(schema_path, 'r') as f:
         conn.executescript(f.read())
     conn.commit()
     conn.close()
+
 
 def calculate_rating(points, rebounds, assists, steals, blocks, turnovers, airballs, bozo_moments, fg, fga):
     misses = max(0, fga - fg)
@@ -283,6 +373,8 @@ def get_single_game_records():
     return records
 
 def seed_db():
+    if DATABASE_URL:
+        return
     conn = get_db_connection()
     
     # Check if we have players already
@@ -378,8 +470,363 @@ def seed_db():
     conn.commit()
     conn.close()
 
+def calculate_payout(wager, odds):
+    if odds > 0:
+        payout = wager + (wager * odds / 100.0)
+    else:
+        payout = wager + (wager * 100.0 / abs(odds))
+    return int(round(payout))
+
+def create_betting_user(nickname, pin):
+    conn = get_db_connection()
+    # Check if nickname already exists
+    existing = conn.execute("SELECT id FROM betting_users WHERE nickname = ?", (nickname,)).fetchone()
+    if existing:
+        conn.close()
+        return False, "Nickname already taken"
+        
+    pin_hash = generate_password_hash(pin)
+    conn.execute('''
+        INSERT INTO betting_users (nickname, pin_hash, balance)
+        VALUES (?, ?, 100000)
+    ''', (nickname, pin_hash))
+    conn.commit()
+    conn.close()
+    return True, "User registered successfully!"
+
+def verify_betting_user(nickname, pin):
+    conn = get_db_connection()
+    user = conn.execute("SELECT * FROM betting_users WHERE nickname = ?", (nickname,)).fetchone()
+    conn.close()
+    if user and check_password_hash(user['pin_hash'], pin):
+        return dict(user)
+    return None
+
+def get_betting_user(user_id):
+    conn = get_db_connection()
+    user = conn.execute("SELECT * FROM betting_users WHERE id = ?", (user_id,)).fetchone()
+    conn.close()
+    return dict(user) if user else None
+
+def create_prop(game_id, prop_type, player_id, line_value, odds_over, odds_under, description):
+    conn = get_db_connection()
+    conn.execute('''
+        INSERT INTO props (game_id, prop_type, player_id, line_value, odds_over, odds_under, description, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 'open')
+    ''', (game_id, prop_type, player_id or None, line_value, odds_over, odds_under, description))
+    conn.commit()
+    conn.close()
+
+def get_active_props():
+    conn = get_db_connection()
+    props = conn.execute('''
+        SELECT pr.*, g.opponent, g.date, pl.name as player_name
+        FROM props pr
+        JOIN games g ON pr.game_id = g.id
+        LEFT JOIN players pl ON pr.player_id = pl.id
+        WHERE pr.status = 'open'
+        ORDER BY g.date DESC, pr.id ASC
+    ''').fetchall()
+    conn.close()
+    return [dict(p) for p in props]
+
+def get_props_for_game(game_id):
+    conn = get_db_connection()
+    props = conn.execute('''
+        SELECT pr.*, pl.name as player_name
+        FROM props pr
+        LEFT JOIN players pl ON pr.player_id = pl.id
+        WHERE pr.game_id = ?
+        ORDER BY pr.id ASC
+    ''', (game_id,)).fetchall()
+    conn.close()
+    return [dict(p) for p in props]
+
+def get_leaderboard():
+    conn = get_db_connection()
+    users = conn.execute('''
+        SELECT id, nickname, balance
+        FROM betting_users
+        ORDER BY balance DESC, nickname ASC
+    ''').fetchall()
+    conn.close()
+    return [dict(u) for u in users]
+
+def get_user_bets(user_id):
+    conn = get_db_connection()
+    wagers = conn.execute('''
+        SELECT * FROM wagers
+        WHERE user_id = ?
+        ORDER BY placed_at DESC
+    ''', (user_id,)).fetchall()
+    
+    wagers_list = []
+    for w in wagers:
+        w_dict = dict(w)
+        legs = conn.execute('''
+            SELECT b.*, pr.description, pr.prop_type, pr.line_value, g.opponent, g.date, pl.name as player_name
+            FROM bets b
+            JOIN props pr ON b.prop_id = pr.id
+            JOIN games g ON pr.game_id = g.id
+            LEFT JOIN players pl ON pr.player_id = pl.id
+            WHERE b.wager_id = ?
+            ORDER BY b.id ASC
+        ''', (w_dict['id'],)).fetchall()
+        w_dict['legs'] = [dict(l) for l in legs]
+        wagers_list.append(w_dict)
+        
+    conn.close()
+    return wagers_list
+
+def american_to_decimal(odds):
+    if odds > 0:
+        return (odds / 100.0) + 1.0
+    else:
+        return (100.0 / abs(odds)) + 1.0
+
+def decimal_to_american(decimal_odds):
+    if decimal_odds >= 2.0:
+        return int(round((decimal_odds - 1.0) * 100.0))
+    else:
+        return int(round(-100.0 / (decimal_odds - 1.0)))
+
+def calculate_parlay_odds(odds_list):
+    if not odds_list:
+        return -110
+    total_decimal = 1.0
+    for odds in odds_list:
+        total_decimal *= american_to_decimal(odds)
+    return decimal_to_american(total_decimal)
+
+def place_bets(user_id, selections, is_parlay=False, parlay_wager=0):
+    if not selections:
+        return False, "No selections provided"
+        
+    conn = get_db_connection()
+    
+    user = conn.execute("SELECT balance FROM betting_users WHERE id = ?", (user_id,)).fetchone()
+    if not user:
+        conn.close()
+        return False, "User not found"
+        
+    if is_parlay:
+        total_wager = parlay_wager
+        if total_wager <= 0:
+            conn.close()
+            return False, "Wager amount must be positive"
+    else:
+        total_wager = sum(int(sel.get('wager_amount', 0)) for sel in selections)
+        if total_wager <= 0:
+            conn.close()
+            return False, "Wager amounts must be positive"
+            
+    if user['balance'] < total_wager:
+        conn.close()
+        return False, "Insufficient balance"
+        
+    prop_ids = [int(sel['prop_id']) for sel in selections]
+    
+    # PostgreSQL vs SQLite parameter placeholder length workaround
+    placeholders = ','.join(['?'] * len(prop_ids))
+    props = conn.execute(f"SELECT * FROM props WHERE id IN ({placeholders})", prop_ids).fetchall()
+    props_map = {p['id']: p for p in props}
+    
+    for p_id in prop_ids:
+        if p_id not in props_map or props_map[p_id]['status'] != 'open':
+            conn.close()
+            return False, "One or more props are closed or unavailable"
+            
+    if is_parlay:
+        odds_list = []
+        legs_data = []
+        for sel in selections:
+            p_id = int(sel['prop_id'])
+            prop = props_map[p_id]
+            selection = sel['selection']
+            
+            if selection in ['over', 'yes']:
+                leg_odds = prop['odds_over']
+            else:
+                leg_odds = prop['odds_under']
+                
+            odds_list.append(leg_odds)
+            legs_data.append((p_id, selection, leg_odds))
+            
+        combined_odds = calculate_parlay_odds(odds_list)
+        
+        conn.execute("UPDATE betting_users SET balance = balance - ? WHERE id = ?", (total_wager, user_id))
+        
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO wagers (user_id, wager_amount, odds_at_placed, status)
+            VALUES (?, ?, ?, 'pending')
+        ''', (user_id, total_wager, combined_odds))
+        wager_id = cursor.lastrowid
+        
+        for p_id, selection, leg_odds in legs_data:
+            cursor.execute('''
+                INSERT INTO bets (wager_id, prop_id, selection, odds_at_placed, status)
+                VALUES (?, ?, ?, ?, 'pending')
+            ''', (wager_id, p_id, selection, leg_odds))
+            
+    else:
+        conn.execute("UPDATE betting_users SET balance = balance - ? WHERE id = ?", (total_wager, user_id))
+        
+        for sel in selections:
+            p_id = int(sel['prop_id'])
+            prop = props_map[p_id]
+            selection = sel['selection']
+            wager = int(sel['wager_amount'])
+            
+            if selection in ['over', 'yes']:
+                leg_odds = prop['odds_over']
+            else:
+                leg_odds = prop['odds_under']
+                
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT INTO wagers (user_id, wager_amount, odds_at_placed, status)
+                VALUES (?, ?, ?, 'pending')
+            ''', (user_id, wager, leg_odds))
+            wager_id = cursor.lastrowid
+            
+            cursor.execute('''
+                INSERT INTO bets (wager_id, prop_id, selection, odds_at_placed, status)
+                VALUES (?, ?, ?, ?, 'pending')
+            ''', (wager_id, p_id, selection, leg_odds))
+            
+    conn.commit()
+    conn.close()
+    return True, "Bets placed successfully!"
+
+def place_bet(user_id, prop_id, wager_amount, selection):
+    # Legacy wrapper function to keep tests passing
+    selections = [{'prop_id': prop_id, 'selection': selection, 'wager_amount': wager_amount}]
+    success, msg = place_bets(user_id, selections, is_parlay=False)
+    return success, msg
+
+def delete_prop(prop_id):
+    conn = get_db_connection()
+    pending_bets = conn.execute("SELECT DISTINCT wager_id FROM bets WHERE prop_id = ? AND status = 'pending'", (prop_id,)).fetchall()
+    
+    for row in pending_bets:
+        wager_id = row['wager_id']
+        wager = conn.execute("SELECT user_id, wager_amount, status FROM wagers WHERE id = ?", (wager_id,)).fetchone()
+        if wager and wager['status'] == 'pending':
+            conn.execute("UPDATE betting_users SET balance = balance + ? WHERE id = ?", (wager['wager_amount'], wager['user_id']))
+            conn.execute("UPDATE wagers SET status = 'push', payout = ? WHERE id = ?", (wager['wager_amount'], wager_id))
+            conn.execute("UPDATE bets SET status = 'push' WHERE wager_id = ?", (wager_id,))
+            
+    conn.execute("DELETE FROM props WHERE id = ?", (prop_id,))
+    conn.commit()
+    conn.close()
+
+def grade_single_prop_conn(conn, prop_id, outcome):
+    status_str = f"graded_{outcome}" if outcome != 'push' else 'push'
+    conn.execute("UPDATE props SET status = ? WHERE id = ?", (status_str, prop_id))
+    
+    legs = conn.execute("SELECT * FROM bets WHERE prop_id = ? AND status = 'pending'", (prop_id,)).fetchall()
+    wager_ids = set()
+    
+    for leg in legs:
+        leg_id = leg['id']
+        selection = leg['selection']
+        wager_ids.add(leg['wager_id'])
+        
+        leg_status = 'lost'
+        if outcome == 'push':
+            leg_status = 'push'
+        elif selection == outcome:
+            leg_status = 'won'
+            
+        conn.execute("UPDATE bets SET status = ? WHERE id = ?", (leg_status, leg_id))
+        
+    for w_id in wager_ids:
+        wager = conn.execute("SELECT * FROM wagers WHERE id = ?", (w_id,)).fetchone()
+        if not wager or wager['status'] != 'pending':
+            continue
+            
+        all_legs = conn.execute("SELECT * FROM bets WHERE wager_id = ?", (w_id,)).fetchall()
+        
+        has_lost = any(l['status'] == 'lost' for l in all_legs)
+        any_pending = any(l['status'] == 'pending' for l in all_legs)
+        
+        if has_lost:
+            conn.execute("UPDATE wagers SET status = 'lost', payout = 0 WHERE id = ?", (w_id,))
+        elif not any_pending:
+            multiplier = 1.0
+            any_won = False
+            
+            for l in all_legs:
+                if l['status'] == 'won':
+                    multiplier *= american_to_decimal(l['odds_at_placed'])
+                    any_won = True
+                
+            wager_amount = wager['wager_amount']
+            user_id = wager['user_id']
+            
+            if not any_won:
+                payout = wager_amount
+                conn.execute("UPDATE wagers SET status = 'push', payout = ? WHERE id = ?", (payout, w_id))
+                conn.execute("UPDATE betting_users SET balance = balance + ? WHERE id = ?", (payout, user_id))
+            else:
+                payout = int(round(wager_amount * multiplier))
+                conn.execute("UPDATE wagers SET status = 'won', payout = ? WHERE id = ?", (payout, w_id))
+                conn.execute("UPDATE betting_users SET balance = balance + ? WHERE id = ?", (payout, user_id))
+
+def grade_prop(prop_id, outcome):
+    conn = get_db_connection()
+    grade_single_prop_conn(conn, prop_id, outcome)
+    conn.commit()
+    conn.close()
+
+def auto_grade_game_props(game_id):
+    conn = get_db_connection()
+    game = conn.execute('SELECT * FROM games WHERE id = ?', (game_id,)).fetchone()
+    if not game:
+        conn.close()
+        return
+
+    stats_rows = conn.execute('SELECT * FROM stats WHERE game_id = ?', (game_id,)).fetchall()
+    stats_map = {row['player_id']: row for row in stats_rows}
+
+    props_to_grade = conn.execute("SELECT * FROM props WHERE game_id = ? AND status = 'open'", (game_id,)).fetchall()
+
+    for prop in props_to_grade:
+        prop_id = prop['id']
+        prop_type = prop['prop_type']
+        player_id = prop['player_id']
+        line_value = prop['line_value']
+        
+        outcome = None
+
+        if prop_type == 'outcome':
+            game_outcome = game['outcome'].upper() # 'W' or 'L'
+            outcome = 'yes' if game_outcome == 'W' else 'no'
+
+        elif prop_type in ['points', 'rebounds', 'assists', 'steals', 'blocks', 'turnovers', 'airballs', 'bozo_moments', 'rating', 'three_pt']:
+            if player_id in stats_map:
+                stat_row = stats_map[player_id]
+                stat_value = stat_row[prop_type]
+                
+                if stat_value > line_value:
+                    outcome = 'over'
+                elif stat_value < line_value:
+                    outcome = 'under'
+                else:
+                    outcome = 'push'
+            else:
+                # Did Not Play -> refund
+                outcome = 'push'
+
+        if outcome:
+            grade_single_prop_conn(conn, prop_id, outcome)
+
+    conn.commit()
+    conn.close()
+
 if __name__ == '__main__':
-    # Initialize and seed database if run directly
     init_db()
     seed_db()
     print("Database initialized and seeded successfully.")
+

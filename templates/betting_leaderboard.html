@@ -1,0 +1,69 @@
+{% extends 'layout.html' %}
+
+{% block title %}Leaderboard{% endblock %}
+
+{% block content %}
+<div class="leaderboard-container">
+    
+    <!-- Betting Sub-navigation -->
+    <div class="betting-nav-header">
+        <a href="{{ url_for('betting') }}" class="betting-nav-link">🎯 Odds Board</a>
+        <a href="{{ url_for('betting_leaderboard') }}" class="betting-nav-link active">🏆 Leaderboard</a>
+        {% if is_admin() %}
+            <a href="{{ url_for('manage_props') }}" class="betting-nav-link" style="color: var(--neon-gold); border-bottom-color: transparent;">⚙️ Manage Props (Admin)</a>
+        {% endif %}
+    </div>
+
+    <h1>🏆 Cow Book Leaderboard</h1>
+    <p style="text-align: center; color: var(--text-secondary); margin-bottom: 2rem; font-size: 1rem;">
+        The elite punters of Deadly Cows basketball. Rankings update dynamically as stats are graded.
+    </p>
+
+    <div style="overflow-x: auto; border-radius: 12px; border: 1px solid var(--border-color);">
+        <table class="leaderboard-table">
+            <thead>
+                <tr>
+                    <th style="width: 100px;">Rank</th>
+                    <th>Punter</th>
+                    <th style="text-align: right;">Total Balance</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if not leaderboard %}
+                    <tr>
+                        <td colspan="3" class="empty-state" style="border: none;">
+                            No users registered yet. Be the first to claim the pasture!
+                        </td>
+                    </tr>
+                {% else %}
+                    {% for user in leaderboard %}
+                        <tr class="leaderboard-row {% if loop.index <= 3 %}rank-{{ loop.index }}{% endif %}">
+                            <td>
+                                {% if loop.index == 1 %}
+                                    👑 1st
+                                {% elif loop.index == 2 %}
+                                    🥈 2nd
+                                {% elif loop.index == 3 %}
+                                    🥉 3rd
+                                {% else %}
+                                    #{{ loop.index }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                <strong>{{ user.nickname }}</strong>
+                                {% if current_betting_user and current_betting_user.id == user.id %}
+                                    <span style="color: var(--neon-green); font-size: 0.8rem; margin-left: 0.5rem; font-family: var(--font-mono);">(You)</span>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: right; font-family: var(--font-mono); font-weight: bold; color: {% if user.balance > 100000 %}var(--neon-green){% elif user.balance < 100000 %}var(--neon-red){% else %}var(--text-primary){% endif %};">
+                                ${{ user.balance }}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+{% endblock %}
