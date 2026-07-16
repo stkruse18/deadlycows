@@ -44,183 +44,191 @@
         <!-- Left: Open Props -->
         <div class="props-board">
             
-            <!-- TEAM PROPS SECTION -->
-            <h2 style="margin-bottom: 1rem; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 0.3rem;">Team Props</h2>
-            {% if not team_props %}
-                <div class="empty-state" style="margin-bottom: 2rem; padding: 1.5rem;">
-                    <p style="color: var(--text-secondary); font-size: 0.9rem;">No active team props at the moment.</p>
-                </div>
-            {% else %}
-                <div class="props-list" style="margin-bottom: 2rem;">
-                    {% for prop in team_props %}
-                        <div class="prop-card">
-                            <div class="prop-header">
-                                <span class="prop-game-info">
-                                    vs {{ prop.opponent }} | {{ prop.date }}
-                                </span>
-                            </div>
-                            <div class="prop-desc">
-                                {{ prop.description }}
-                            </div>
-                            
-                            <div class="bet-options-row" style="margin-top: 1rem;">
-                                {% if prop.prop_type == 'outcome' or prop.prop_type == 'custom' %}
-                                    <div class="selection-btn-container" style="flex: 1;">
-                                        <button type="button" 
-                                                id="btn-{{ prop.id }}-yes" 
-                                                class="selection-label-btn {% if betting_paused %}paused-disabled{% endif %}" 
-                                                style="width: 100%;" 
-                                                {% if betting_paused %}
-                                                    onclick="alert('🔒 Betting is currently paused.')"
-                                                {% elif current_betting_user %}
-                                                    onclick="toggleSelection('{{ prop.id }}', '{{ prop.description }}', 'yes', '{{ prop.odds_over }}', '{{ prop.line_value }}')"
-                                                {% else %}
-                                                    onclick="window.location.href='{{ url_for('betting_login') }}'"
-                                                {% endif %}>
-                                            Yes ({% if prop.odds_over > 0 %}+{% endif %}{{ prop.odds_over }})
-                                        </button>
-                                    </div>
-                                    <div class="selection-btn-container" style="flex: 1;">
-                                        <button type="button" 
-                                                id="btn-{{ prop.id }}-no" 
-                                                class="selection-label-btn {% if betting_paused %}paused-disabled{% endif %}" 
-                                                style="width: 100%;" 
-                                                {% if betting_paused %}
-                                                    onclick="alert('🔒 Betting is currently paused.')"
-                                                {% elif current_betting_user %}
-                                                    onclick="toggleSelection('{{ prop.id }}', '{{ prop.description }}', 'no', '{{ prop.odds_under }}', '{{ prop.line_value }}')"
-                                                {% else %}
-                                                    onclick="window.location.href='{{ url_for('betting_login') }}'"
-                                                {% endif %}>
-                                            No ({% if prop.odds_under > 0 %}+{% endif %}{{ prop.odds_under }})
-                                        </button>
-                                    </div>
-                                {% else %}
-                                    <div class="selection-btn-container" style="flex: 1;">
-                                        <button type="button" 
-                                                id="btn-{{ prop.id }}-over" 
-                                                class="selection-label-btn {% if betting_paused %}paused-disabled{% endif %}" 
-                                                style="width: 100%;" 
-                                                {% if betting_paused %}
-                                                    onclick="alert('🔒 Betting is currently paused.')"
-                                                {% elif current_betting_user %}
-                                                    onclick="toggleSelection('{{ prop.id }}', '{{ prop.description }}', 'over', '{{ prop.odds_over }}', '{{ prop.line_value }}')"
-                                                {% else %}
-                                                    onclick="window.location.href='{{ url_for('betting_login') }}'"
-                                                {% endif %}>
-                                            Over {{ prop.line_value }} ({% if prop.odds_over > 0 %}+{% endif %}{{ prop.odds_over }})
-                                        </button>
-                                    </div>
-                                    <div class="selection-btn-container" style="flex: 1;">
-                                        <button type="button" 
-                                                id="btn-{{ prop.id }}-under" 
-                                                class="selection-label-btn {% if betting_paused %}paused-disabled{% endif %}" 
-                                                style="width: 100%;" 
-                                                {% if betting_paused %}
-                                                    onclick="alert('🔒 Betting is currently paused.')"
-                                                {% elif current_betting_user %}
-                                                    onclick="toggleSelection('{{ prop.id }}', '{{ prop.description }}', 'under', '{{ prop.odds_under }}', '{{ prop.line_value }}')"
-                                                {% else %}
-                                                    onclick="window.location.href='{{ url_for('betting_login') }}'"
-                                                {% endif %}>
-                                            Under {{ prop.line_value }} ({% if prop.odds_under > 0 %}+{% endif %}{{ prop.odds_under }})
-                                        </button>
-                                    </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    {% endfor %}
-                </div>
-            {% endif %}
+            <!-- Section Tabs -->
+            <div class="betting-tabs">
+                <button type="button" class="betting-tab-btn active" id="tab-btn-team" onclick="switchPropTab('team')">Team Props</button>
+                <button type="button" class="betting-tab-btn" id="tab-btn-player" onclick="switchPropTab('player')">Player Props</button>
+            </div>
 
-            <!-- PLAYER PROPS SECTION -->
-            <h2 style="margin-bottom: 1rem; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 0.3rem; margin-top: 1.5rem;">Player Props</h2>
-            {% if not player_props %}
-                <div class="empty-state" style="padding: 1.5rem;">
-                    <p style="color: var(--text-secondary); font-size: 0.9rem;">No active player props at the moment.</p>
-                </div>
-            {% else %}
-                <div class="props-list">
-                    {% for prop in player_props %}
-                        <div class="prop-card">
-                            <div class="prop-header">
-                                <span class="prop-game-info">
-                                    vs {{ prop.opponent }} | {{ prop.date }}
-                                </span>
+            <!-- TEAM PROPS CONTAINER -->
+            <div id="props-container-team">
+                {% if not team_props %}
+                    <div class="empty-state" style="padding: 1.5rem;">
+                        <p style="color: var(--text-secondary); font-size: 0.9rem;">No active team props at the moment.</p>
+                    </div>
+                {% else %}
+                    <div class="props-list">
+                        {% for prop in team_props %}
+                            <div class="prop-card">
+                                <div class="prop-header">
+                                    <span class="prop-game-info">
+                                        vs {{ prop.opponent }} | {{ prop.date }}
+                                    </span>
+                                </div>
+                                <div class="prop-desc">
+                                    {{ prop.description }}
+                                </div>
+                                
+                                <div class="bet-options-row" style="margin-top: 1rem;">
+                                    {% if prop.prop_type == 'outcome' or prop.prop_type == 'custom' %}
+                                        <div class="selection-btn-container" style="flex: 1;">
+                                            <button type="button" 
+                                                    id="btn-{{ prop.id }}-yes" 
+                                                    class="selection-label-btn {% if betting_paused %}paused-disabled{% endif %}" 
+                                                    style="width: 100%;" 
+                                                    {% if betting_paused %}
+                                                        onclick="alert('🔒 Betting is currently paused.')"
+                                                    {% elif current_betting_user %}
+                                                        onclick="toggleSelection('{{ prop.id }}', '{{ prop.description }}', 'yes', '{{ prop.odds_over }}', '{{ prop.line_value }}')"
+                                                    {% else %}
+                                                        onclick="window.location.href='{{ url_for('betting_login') }}'"
+                                                    {% endif %}>
+                                                Yes ({% if prop.odds_over > 0 %}+{% endif %}{{ prop.odds_over }})
+                                            </button>
+                                        </div>
+                                        <div class="selection-btn-container" style="flex: 1;">
+                                            <button type="button" 
+                                                    id="btn-{{ prop.id }}-no" 
+                                                    class="selection-label-btn {% if betting_paused %}paused-disabled{% endif %}" 
+                                                    style="width: 100%;" 
+                                                    {% if betting_paused %}
+                                                        onclick="alert('🔒 Betting is currently paused.')"
+                                                    {% elif current_betting_user %}
+                                                        onclick="toggleSelection('{{ prop.id }}', '{{ prop.description }}', 'no', '{{ prop.odds_under }}', '{{ prop.line_value }}')"
+                                                    {% else %}
+                                                        onclick="window.location.href='{{ url_for('betting_login') }}'"
+                                                    {% endif %}>
+                                                No ({% if prop.odds_under > 0 %}+{% endif %}{{ prop.odds_under }})
+                                            </button>
+                                        </div>
+                                    {% else %}
+                                        <div class="selection-btn-container" style="flex: 1;">
+                                            <button type="button" 
+                                                    id="btn-{{ prop.id }}-over" 
+                                                    class="selection-label-btn {% if betting_paused %}paused-disabled{% endif %}" 
+                                                    style="width: 100%;" 
+                                                    {% if betting_paused %}
+                                                        onclick="alert('🔒 Betting is currently paused.')"
+                                                    {% elif current_betting_user %}
+                                                        onclick="toggleSelection('{{ prop.id }}', '{{ prop.description }}', 'over', '{{ prop.odds_over }}', '{{ prop.line_value }}')"
+                                                    {% else %}
+                                                        onclick="window.location.href='{{ url_for('betting_login') }}'"
+                                                    {% endif %}>
+                                                Over {{ prop.line_value }} ({% if prop.odds_over > 0 %}+{% endif %}{{ prop.odds_over }})
+                                            </button>
+                                        </div>
+                                        <div class="selection-btn-container" style="flex: 1;">
+                                            <button type="button" 
+                                                    id="btn-{{ prop.id }}-under" 
+                                                    class="selection-label-btn {% if betting_paused %}paused-disabled{% endif %}" 
+                                                    style="width: 100%;" 
+                                                    {% if betting_paused %}
+                                                        onclick="alert('🔒 Betting is currently paused.')"
+                                                    {% elif current_betting_user %}
+                                                        onclick="toggleSelection('{{ prop.id }}', '{{ prop.description }}', 'under', '{{ prop.odds_under }}', '{{ prop.line_value }}')"
+                                                    {% else %}
+                                                        onclick="window.location.href='{{ url_for('betting_login') }}'"
+                                                    {% endif %}>
+                                                Under {{ prop.line_value }} ({% if prop.odds_under > 0 %}+{% endif %}{{ prop.odds_under }})
+                                            </button>
+                                        </div>
+                                    {% endif %}
+                                </div>
                             </div>
-                            <div class="prop-desc">
-                                {{ prop.description }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- PLAYER PROPS CONTAINER -->
+            <div id="props-container-player" style="display: none;">
+                {% if not player_props %}
+                    <div class="empty-state" style="padding: 1.5rem;">
+                        <p style="color: var(--text-secondary); font-size: 0.9rem;">No active player props at the moment.</p>
+                    </div>
+                {% else %}
+                    <div class="props-list">
+                        {% for prop in player_props %}
+                            <div class="prop-card">
+                                <div class="prop-header">
+                                    <span class="prop-game-info">
+                                        vs {{ prop.opponent }} | {{ prop.date }}
+                                    </span>
+                                </div>
+                                <div class="prop-desc">
+                                    {{ prop.description }}
+                                </div>
+                                
+                                <div class="bet-options-row" style="margin-top: 1rem;">
+                                    {% if prop.prop_type == 'outcome' or prop.prop_type == 'custom' %}
+                                        <div class="selection-btn-container" style="flex: 1;">
+                                            <button type="button" 
+                                                    id="btn-{{ prop.id }}-yes" 
+                                                    class="selection-label-btn {% if betting_paused %}paused-disabled{% endif %}" 
+                                                    style="width: 100%;" 
+                                                    {% if betting_paused %}
+                                                        onclick="alert('🔒 Betting is currently paused.')"
+                                                    {% elif current_betting_user %}
+                                                        onclick="toggleSelection('{{ prop.id }}', '{{ prop.description }}', 'yes', '{{ prop.odds_over }}', '{{ prop.line_value }}')"
+                                                    {% else %}
+                                                        onclick="window.location.href='{{ url_for('betting_login') }}'"
+                                                    {% endif %}>
+                                                Yes ({% if prop.odds_over > 0 %}+{% endif %}{{ prop.odds_over }})
+                                            </button>
+                                        </div>
+                                        <div class="selection-btn-container" style="flex: 1;">
+                                            <button type="button" 
+                                                    id="btn-{{ prop.id }}-no" 
+                                                    class="selection-label-btn {% if betting_paused %}paused-disabled{% endif %}" 
+                                                    style="width: 100%;" 
+                                                    {% if betting_paused %}
+                                                        onclick="alert('🔒 Betting is currently paused.')"
+                                                    {% elif current_betting_user %}
+                                                        onclick="toggleSelection('{{ prop.id }}', '{{ prop.description }}', 'no', '{{ prop.odds_under }}', '{{ prop.line_value }}')"
+                                                    {% else %}
+                                                        onclick="window.location.href='{{ url_for('betting_login') }}'"
+                                                    {% endif %}>
+                                                No ({% if prop.odds_under > 0 %}+{% endif %}{{ prop.odds_under }})
+                                            </button>
+                                        </div>
+                                    {% else %}
+                                        <div class="selection-btn-container" style="flex: 1;">
+                                            <button type="button" 
+                                                    id="btn-{{ prop.id }}-over" 
+                                                    class="selection-label-btn {% if betting_paused %}paused-disabled{% endif %}" 
+                                                    style="width: 100%;" 
+                                                    {% if betting_paused %}
+                                                        onclick="alert('🔒 Betting is currently paused.')"
+                                                    {% elif current_betting_user %}
+                                                        onclick="toggleSelection('{{ prop.id }}', '{{ prop.description }}', 'over', '{{ prop.odds_over }}', '{{ prop.line_value }}')"
+                                                    {% else %}
+                                                        onclick="window.location.href='{{ url_for('betting_login') }}'"
+                                                    {% endif %}>
+                                                Over {{ prop.line_value }} ({% if prop.odds_over > 0 %}+{% endif %}{{ prop.odds_over }})
+                                            </button>
+                                        </div>
+                                        <div class="selection-btn-container" style="flex: 1;">
+                                            <button type="button" 
+                                                    id="btn-{{ prop.id }}-under" 
+                                                    class="selection-label-btn {% if betting_paused %}paused-disabled{% endif %}" 
+                                                    style="width: 100%;" 
+                                                    {% if betting_paused %}
+                                                        onclick="alert('🔒 Betting is currently paused.')"
+                                                    {% elif current_betting_user %}
+                                                        onclick="toggleSelection('{{ prop.id }}', '{{ prop.description }}', 'under', '{{ prop.odds_under }}', '{{ prop.line_value }}')"
+                                                    {% else %}
+                                                        onclick="window.location.href='{{ url_for('betting_login') }}'"
+                                                    {% endif %}>
+                                                Under {{ prop.line_value }} ({% if prop.odds_under > 0 %}+{% endif %}{{ prop.odds_under }})
+                                            </button>
+                                        </div>
+                                    {% endif %}
+                                </div>
                             </div>
-                            
-                            <div class="bet-options-row" style="margin-top: 1rem;">
-                                {% if prop.prop_type == 'outcome' or prop.prop_type == 'custom' %}
-                                    <div class="selection-btn-container" style="flex: 1;">
-                                        <button type="button" 
-                                                id="btn-{{ prop.id }}-yes" 
-                                                class="selection-label-btn {% if betting_paused %}paused-disabled{% endif %}" 
-                                                style="width: 100%;" 
-                                                {% if betting_paused %}
-                                                    onclick="alert('🔒 Betting is currently paused.')"
-                                                {% elif current_betting_user %}
-                                                    onclick="toggleSelection('{{ prop.id }}', '{{ prop.description }}', 'yes', '{{ prop.odds_over }}', '{{ prop.line_value }}')"
-                                                {% else %}
-                                                    onclick="window.location.href='{{ url_for('betting_login') }}'"
-                                                {% endif %}>
-                                            Yes ({% if prop.odds_over > 0 %}+{% endif %}{{ prop.odds_over }})
-                                        </button>
-                                    </div>
-                                    <div class="selection-btn-container" style="flex: 1;">
-                                        <button type="button" 
-                                                id="btn-{{ prop.id }}-no" 
-                                                class="selection-label-btn {% if betting_paused %}paused-disabled{% endif %}" 
-                                                style="width: 100%;" 
-                                                {% if betting_paused %}
-                                                    onclick="alert('🔒 Betting is currently paused.')"
-                                                {% elif current_betting_user %}
-                                                    onclick="toggleSelection('{{ prop.id }}', '{{ prop.description }}', 'no', '{{ prop.odds_under }}', '{{ prop.line_value }}')"
-                                                {% else %}
-                                                    onclick="window.location.href='{{ url_for('betting_login') }}'"
-                                                {% endif %}>
-                                            No ({% if prop.odds_under > 0 %}+{% endif %}{{ prop.odds_under }})
-                                        </button>
-                                    </div>
-                                {% else %}
-                                    <div class="selection-btn-container" style="flex: 1;">
-                                        <button type="button" 
-                                                id="btn-{{ prop.id }}-over" 
-                                                class="selection-label-btn {% if betting_paused %}paused-disabled{% endif %}" 
-                                                style="width: 100%;" 
-                                                {% if betting_paused %}
-                                                    onclick="alert('🔒 Betting is currently paused.')"
-                                                {% elif current_betting_user %}
-                                                    onclick="toggleSelection('{{ prop.id }}', '{{ prop.description }}', 'over', '{{ prop.odds_over }}', '{{ prop.line_value }}')"
-                                                {% else %}
-                                                    onclick="window.location.href='{{ url_for('betting_login') }}'"
-                                                {% endif %}>
-                                            Over {{ prop.line_value }} ({% if prop.odds_over > 0 %}+{% endif %}{{ prop.odds_over }})
-                                        </button>
-                                    </div>
-                                    <div class="selection-btn-container" style="flex: 1;">
-                                        <button type="button" 
-                                                id="btn-{{ prop.id }}-under" 
-                                                class="selection-label-btn {% if betting_paused %}paused-disabled{% endif %}" 
-                                                style="width: 100%;" 
-                                                {% if betting_paused %}
-                                                    onclick="alert('🔒 Betting is currently paused.')"
-                                                {% elif current_betting_user %}
-                                                    onclick="toggleSelection('{{ prop.id }}', '{{ prop.description }}', 'under', '{{ prop.odds_under }}', '{{ prop.line_value }}')"
-                                                {% else %}
-                                                    onclick="window.location.href='{{ url_for('betting_login') }}'"
-                                                {% endif %}>
-                                            Under {{ prop.line_value }} ({% if prop.odds_under > 0 %}+{% endif %}{{ prop.odds_under }})
-                                        </button>
-                                    </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    {% endfor %}
-                </div>
-            {% endif %}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
 
         </div>
         
@@ -304,4 +312,13 @@
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/betslip.js') }}"></script>
+<script>
+    function switchPropTab(tabName) {
+        document.getElementById('props-container-team').style.display = (tabName === 'team') ? 'block' : 'none';
+        document.getElementById('props-container-player').style.display = (tabName === 'player') ? 'block' : 'none';
+        
+        document.getElementById('tab-btn-team').classList.toggle('active', tabName === 'team');
+        document.getElementById('tab-btn-player').classList.toggle('active', tabName === 'player');
+    }
+</script>
 {% endblock %}

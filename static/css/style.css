@@ -1752,3 +1752,32 @@ footer p {
     border-color: rgba(255, 255, 255, 0.05) !important;
 }
 
+/* Odds Board Section Tabs */
+.betting-tabs {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding-bottom: 0.5rem;
+}
+
+.betting-tab-btn {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-secondary);
+    font-family: var(--font-header);
+    text-transform: uppercase;
+    font-size: 1.1rem;
+    font-weight: 700;
+    padding-bottom: 0.4rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    letter-spacing: 0.5px;
+}
+
+.betting-tab-btn.active, .betting-tab-btn:hover {
+    color: var(--neon-green);
+    border-bottom-color: var(--neon-green);
+}
+
